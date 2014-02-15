@@ -1,0 +1,28 @@
+      <datalist id='knownindiservers'>
+	<option>localhost</option>
+	<option>127.0.0.1</option>
+	<option>192.168.0.1</option>
+      </datalist>
+      <datalist id='knownindiports'>
+	<option>7624</option>
+      </datalist>
+      <div id='serverconnections' class='serverconnections'>
+	<div id='serverconnectionsheader' class='divheader'>
+	  <!--<form action='#' id='serverform' method='get'>-->
+	  <fieldset>
+	    <legend>Add Indi server</legend>
+	    <label for='server'>Server: </label><input type='text' id='server' size='15' list='knownindiservers'/>
+	    <label for='port'>Port: </label><input type='number' id='port' max='65535' size='5' list='knownindiports'/>
+	    <input id='connect' type='button' value='Connect' />
+	  </fieldset>
+	  <!--</form>-->
+	</div>
+	<div id='serverconnectionslist' class='divcontent'>
+	  <span id='noservertext'>No Server Connected</span>
+	  <ul id='serverlist' hidden='hidden'>
+	  </ul>
+	</div>
+	<div id='serverconnectionsfooter' class='divfooter'>
+
+	</div>
+      </div>

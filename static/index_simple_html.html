@@ -1,0 +1,25 @@
+<html>
+    <head>
+      <!--<script type='application/javascript' src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>-->
+      <!--<script type='application/javascript' src='https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js'></script>-->
+      <script type='application/javascript' src='js/jquery-1.11.0.js'></script>
+      <script type='application/javascript' src='js/indi_simple_html.js'></script>
+      <script type='application/javascript' src='js/main.js'></script>
+      <script type='application/javascript'>
+	$(document).ready(startws('{scheme!s}','{host!s}',{port!s}));
+      </script>
+    </head>
+    <body>
+      
+      <div id="logs" class="logs">
+	<div id="logsheader" class="divheader">
+	  Logs
+	</div>
+	<div id="logscontent" class="divcontent">
+	  <textarea id='message' rows='10' style="width:100%"></textarea>
+	</div>
+	<div id="logsfilter" class="divfooter">
+	</div>
+      </div>
+    </body>
+</html>
