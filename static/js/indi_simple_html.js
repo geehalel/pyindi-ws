@@ -93,7 +93,29 @@ Indi.util =  {
        return buf;
      },
 
-    b64decode: (window.atob ? (function(x) { return window.atob(x); }) : (function(x) { return Indi.util.base64_decode(x); }))
+    b64decode: (window.atob ? (function(x) { return window.atob(x); }) : (function(x) { return Indi.util.base64_decode(x); })),
+
+    simpletextviewer: (function($) {
+	var simpletextviewer = function(iblob) {
+	    this.iblob = iblob;
+	    this.textarea=$('<textarea style="width:100%" rows="10" readonly="readonly"/>');
+	};
+
+	simpletextviewer.prototype = {
+	    constructor: simpletextviewer,
+	    getdivelt : function () {
+		return this.textarea;
+	    },
+	    refresh : function() {
+		this.textarea.html(this.iblob.blob);
+	    },
+	    name: function () {
+		return 'simpletext';
+	    }
+	};
+	
+	return simpletextviewer;
+    }(jQuery)),
     
 };
 
@@ -418,10 +440,11 @@ Indi.iblob = (function($) {
 	this.name = jsondata.name;
 	this.label = jsondata.label;
 	this.bloblen=jsondata.bloblen;
-	this.blobsize=jsondata.size;
+	this.size=jsondata.size;
 	//this.format=jsondata.format; uninitialized data
 	this.format='';
 	this.enabletransfer=false;
+	this.displayed=false;
 	this.blob=null;
 	this.ws=this.property.device.server.ws;
 	this.id= this.property.id+'_'+this.name;
@@ -481,9 +504,23 @@ Indi.iblob = (function($) {
 	    evt.data.context.save();
 	});
 	this.buttonDisplay.on('click', {context: this }, function(evt) {
-	    alert('Display '+evt.data.context.name);
+	    //alert('Display '+evt.data.context.name);
+	    evt.data.context.toggleDisplay();
 	});
 	
+	// Display element
+	this.displayelt=$('<tr/>', {
+	    css : { display: 'none' },
+	    html : '<td title="VISUALIZER">None</td>'
+	});
+	this.displaycontentelt=$('<td/>', {
+	    attr : { colspan : 5 }, 
+	    //css : { display: 'none' },
+	    html : this.name+' contents'
+	});
+	this.displayelt.append(this.displaycontentelt);
+	this.displaycontent=null;
+
     };
     
     iblob.prototype = {
@@ -499,7 +536,7 @@ Indi.iblob = (function($) {
 	},
 	setvalue: function(item) {
 	    this.bloblen=item.bloblen;
-	    this.blobsize=item.size;
+	    this.size=item.size;
 	    this.format=item.format;
 	    if (this.enabletransfer)
 		this.blob=Indi.util.b64decode(item.blob);
@@ -515,7 +552,7 @@ Indi.iblob = (function($) {
 	},
 	drawstate: function() {
 	    this.inputbloblen.val(this.bloblen);
-	    this.inputblobsize.val(this.blobsize);
+	    this.inputblobsize.val(this.size);
 	    this.inputformat.val(this.format);
 	    this.inputenable.prop({ 
 		checked : (this.enabletransfer)
@@ -552,6 +589,40 @@ Indi.iblob = (function($) {
 	    }
 	    blobblob = new Blob([Indi.util.str2ab(this.blob)], {type: blobtype});
 	    saveAs(blobblob, blobfilename);
+	},
+	toggleDisplay: function() {
+	    if (!this.displayed && (!this.blob || this.size==0)) {
+		alert('Display Blob: '+this.name+' is empty or undefined');
+		return;
+	    }
+	    this.displayed = !this.displayed;
+	    if (this.displayed) { 
+		if (!this.displaycontent) {
+		    this.buildcontent();
+		    if (this.displaycontent) {
+			this.displaycontentelt.empty();
+			this.displaycontentelt.append(this.displaycontent.getdivelt());
+			this.displayelt.children('td:first').empty();
+			this.displayelt.children('td:first').append(this.displaycontent.name());
+		    }
+		}
+		if (this.displaycontent) 
+		    this.displaycontent.refresh();
+		this.displayelt.show();
+		this.buttonDisplay.html('Hide');
+	    } else {
+		this.displayelt.hide();
+		this.buttonDisplay.html('Display');
+	    }
+	    
+	},
+	buildcontent: function() {
+	    switch (this.format) {
+	    case '.txt':
+	    case '.xml':
+		this.displaycontent=new Indi.util.simpletextviewer(this);
+		break;
+	    }
 	},
 	sendnewvalue: function () {
 	    //var jsonmsg={ type:"newValue", serverkey: this.property.device.server.id, devicename: this.property.device.name, 
@@ -625,6 +696,10 @@ Indi.property = (function($) {
 		    nbitems+=1;
 		    this.vector[item.name]=item;
 		    this.tableelt.append(item.divelt);
+		    if (this.type == Indi.INDI_TYPE.INDI_BLOB) {
+			nbitems+=1; // (add a row for the display element)
+			this.tableelt.append(item.displayelt);
+		    }
 		}
 	    }
 	    this.statuselt=$('<td rowspan="'+nbitems+'" style="height:100%; width: 10px; border: 1px solid; border-radius: 5px;"/>');
