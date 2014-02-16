@@ -54,11 +54,13 @@ o2=new Ns.class('o2', 'po2');
 // TODO
 // Switch handling: ok
 // Light handling: ok
-// Blob handling: ok, no display
+// Blob handling: ok, no save, no display, no upload
 // Property state display: ok
 // number formatting
 // CSS styling
 
+// BUGS
+// undefined input values when vector property setting is used
 
 // TO CHECK IN INDI
 // timestamp not handled in baseclient
@@ -81,6 +83,15 @@ Indi.util =  {
         for(r=q=x="";c=d.charAt(x++);~c&&(u=q%4?u*64+c:c,q++%4)?r+=String.fromCharCode(255&u>>(-2*q&6)):0) c=b.indexOf(c);
         return r;
     },
+
+    str2ab: function(str) {
+       var buf = new ArrayBuffer(str.length); // 2 bytes for each char
+       var bufView = new Uint8Array(buf);
+       for (var i=0, strLen=str.length; i<strLen; i++) {
+         bufView[i] = str.charCodeAt(i);
+       }
+       return buf;
+     },
 
     b64decode: (window.atob ? (function(x) { return window.atob(x); }) : (function(x) { return Indi.util.base64_decode(x); }))
     
@@ -443,6 +454,13 @@ Indi.iblob = (function($) {
 	label.append(this.inputenable);
 	td.append(label);
 	this.divelt.append(td);
+	td=$('<td/>');
+	this.buttonSave=$('<button disabled="disabled" style="margin-left:5px;">Save</button>');
+	td.append(this.buttonSave);
+	this.divelt.append(td);	
+	this.buttonDisplay=$('<button disabled="disabled" style="margin-left:5px;">Display</button>');
+	td.append(this.buttonDisplay);
+	this.divelt.append(td);	
 
 	this.drawstate();
 
@@ -457,6 +475,15 @@ Indi.iblob = (function($) {
 	    //alert(JSON.stringify(jsonmsg));
 	    blob.ws.send(JSON.stringify(jsonmsg));
 	});
+	
+	this.buttonSave.on('click', {context: this }, function(evt) {
+	    //alert('Save '+evt.data.context.name);
+	    evt.data.context.save();
+	});
+	this.buttonDisplay.on('click', {context: this }, function(evt) {
+	    alert('Display '+evt.data.context.name);
+	});
+	
     };
     
     iblob.prototype = {
@@ -476,6 +503,7 @@ Indi.iblob = (function($) {
 	    this.format=item.format;
 	    if (this.enabletransfer)
 		this.blob=Indi.util.b64decode(item.blob);
+	       //b=new Blob(this.blob, {type: "application/octet-binary"});
 	    this.drawstate();
 	},
 	setitem: function(item) {
@@ -491,7 +519,39 @@ Indi.iblob = (function($) {
 	    this.inputformat.val(this.format);
 	    this.inputenable.prop({ 
 		checked : (this.enabletransfer)
-	    }); 	    
+	    }); 
+	    if (this.enabletransfer) {
+		this.buttonSave.removeAttr('disabled'); 
+		this.buttonDisplay.removeAttr('disabled'); 
+	    } else {
+		this.buttonSave.attr('disabled', 'disabled');
+		this.buttonDisplay.attr('disabled', 'disabled');
+	    }
+	},
+	save: function () {
+	    var blobblob = null;
+	    var blobtype=null;
+	    var blobdate=new Date();
+	    var blobfilename=this.name+'_'+blobdate.toISOString()+this.format;
+	    
+	    if (!this.blob || this.size == 0) {
+	    	alert('Save Blob: '+this.name+' is empty or undefined');
+		return;
+	    }
+	    switch (this.format) {
+		case '.fits':
+		case '.jpg':
+		blobtype='application/octet-binary';
+		break;
+		case '.txt':
+		blobtype='text/plain;';
+		break;
+		case '.xml':
+		blobtype='application/xhtml+xml';
+		break;
+	    }
+	    blobblob = new Blob([Indi.util.str2ab(this.blob)], {type: blobtype});
+	    saveAs(blobblob, blobfilename);
 	},
 	sendnewvalue: function () {
 	    //var jsonmsg={ type:"newValue", serverkey: this.property.device.server.id, devicename: this.property.device.name, 
