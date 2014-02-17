@@ -116,7 +116,33 @@ Indi.util =  {
 	
 	return simpletextviewer;
     }(jQuery)),
-    
+
+     simpleimageviewer: (function($) {
+	var simpleimageviewer = function(iblob) {
+	    this.iblob = iblob;
+	    this.canvas=$('<canvas>'+this.iblob.name+' canvas display not supported by your browser</canvas>');
+	    this.image=new Image();
+	    this.format=this.iblob.format.substring(1);
+	};
+   
+	simpleimageviewer.prototype = {
+	    constructor: simpleimageviewer,
+	    getdivelt : function () {
+		return this.canvas;
+	    },
+	    refresh : function() {
+		this.ctx=this.canvas.getContext('2d');
+		this.image.src='data:image/'+this.format+';base64,'+this.iblob.b64blob;
+		this.ctx.drawimage(this.image, 0, 0);
+	    },
+	    name: function () {
+		return 'simpleimage';
+	    }
+	};
+	
+	return simpleimageviewer;
+    }(jQuery)),
+
 };
 
 Indi.inumber = (function($) {
@@ -537,10 +563,12 @@ Indi.iblob = (function($) {
 	setvalue: function(item) {
 	    this.bloblen=item.bloblen;
 	    this.size=item.size;
-	    this.format=item.format;
-	    if (this.enabletransfer)
+	    this.format=item.format.toLowerCase();
+	    if (this.enabletransfer) {
 		this.blob=Indi.util.b64decode(item.blob);
-	       //b=new Blob(this.blob, {type: "application/octet-binary"});
+		if (this.format == '.gif' || this.format == '.jpg' || this.format == '.jpeg' || this.format == '.png')
+		    this.b64blob=item.blob; // keep b64 data to display images as data url
+	    }
 	    this.drawstate();
 	},
 	setitem: function(item) {
@@ -621,6 +649,12 @@ Indi.iblob = (function($) {
 	    case '.txt':
 	    case '.xml':
 		this.displaycontent=new Indi.util.simpletextviewer(this);
+		break;
+	    case '.gif':
+	    case '.jpg':
+	    case '.jpeg':
+	    case '.png':
+		this.displaycontent=new Indi.util.simpleimageviewer(this);
 		break;
 	    }
 	},
