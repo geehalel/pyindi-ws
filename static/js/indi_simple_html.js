@@ -120,8 +120,21 @@ Indi.util =  {
      simpleimageviewer: (function($) {
 	var simpleimageviewer = function(iblob) {
 	    this.iblob = iblob;
-	    this.canvas=$('<canvas>'+this.iblob.name+' canvas display not supported by your browser</canvas>');
+	    this.canvas=$('<canvas></canvas>', {
+		    attr: {width: '400', height: '300'},
+		    css: {border:  '1px solid'},
+		    html: this.iblob.name+' canvas display not supported by your browser'
+	    });
+	    this.ctx=this.canvas[0].getContext('2d');
 	    this.image=new Image();
+	    //this.image=$('<img/>');
+	    $(this.image).on('load', {context: this}, function (evt) {
+		var viewer=evt.data.context;
+		//alert('image for '+viewer.iblob.name+' loaded');
+		viewer.refresh();
+	    });
+
+
 	    this.format=this.iblob.format.substring(1);
 	};
    
@@ -130,10 +143,17 @@ Indi.util =  {
 	    getdivelt : function () {
 		return this.canvas;
 	    },
-	    refresh : function() {
-		this.ctx=this.canvas.getContext('2d');
+	    reload: function() {
 		this.image.src='data:image/'+this.format+';base64,'+this.iblob.b64blob;
-		this.ctx.drawimage(this.image, 0, 0);
+	    },
+	    refresh : function() {
+		//this.canvas[0].width=this.image.width();
+		//this.canvas[0].height=this.image.height();
+		//this.ctx.drawImage(this.image[0], 0, 0, this.image.width(), this.image.height(),   // clip image
+		//		               0, 0, this.image.width(), this.image.height()    // reduce/stretch image
+		this.ctx.drawImage(this.image, 0, 0, this.image.width, this.image.height, 0, 0, 400, 300
+				  );
+
 	    },
 	    name: function () {
 		return 'simpleimage';
@@ -165,7 +185,7 @@ Indi.inumber = (function($) {
 	if (this.step) this.inputrw.attr({ min: this.step});
 	this.setvalue(this.value);
 	this.divelt=$('<tr/>', {
-	    html : '<td title="'+this.name+'">'+this.label+'</td>'
+	    html : '<td title="'+this.name+'">'+(this.label?this.label:this.name)+'</td>'
 	});
 	if (this.property.permission!=Indi.IPerm.IP_WO) {
 	    var td=$('<td/>');
@@ -227,14 +247,14 @@ Indi.iswitch = (function($) {
 	case Indi.ISRule.ISR_1OFMANY:
 	case Indi.ISRule.ISR_ATMOST1:
 	    this.input=$('<button/>');
-	    this.input.append(this.label);
+	    this.input.append((this.label?this.label:this.name));
 	    this.divelt=this.input;
 	    break;
 	case Indi.ISRule.ISR_NOFMANY:
 	    this.input=$('<input type="checkbox"/>');
 	    this.divelt=$('<label/>');
 	    this.divelt.append(this.input);
-	    this.divelt.append(this.label);
+	    this.divelt.append((this.label?this.label:this.name));
 	    this.divelt.css({
 		'margin-right': '5px'
 	    });
@@ -346,7 +366,7 @@ Indi.itext = (function($) {
 	this.inputrw=$('<input type="text">');
 	this.setvalue(this.text);
 	this.divelt=$('<tr/>', {
-	    html : '<td title="'+this.name+'">'+this.label+'</td>'
+	    html : '<td title="'+this.name+'">'+(this.label?this.label:this.name)+'</td>'
 	});
 	if (this.property.permission!=Indi.IPerm.IP_WO) {
 	    var td=$('<td/>');
@@ -407,7 +427,7 @@ Indi.ilight = (function($) {
 	this.inputro=$('<img src="images/led_rounded_h_black.svg.thumb.png" style="height: 20px;">');
 	this.setvalue(this.state);
 	this.divelt=$('<tr/>', {
-	    html : '<td title="'+this.name+'">'+this.label+'</td>'
+	    html : '<td title="'+this.name+'">'+(this.label?this.label:this.name)+'</td>'
 	});
 	var td=$('<td/>');
 	td.append(this.inputro);
@@ -481,7 +501,7 @@ Indi.iblob = (function($) {
 	this.inputenable=$('<input type="checkbox">');
 	//this.setvalue(this.state);
 	this.divelt=$('<tr/>', {
-	    html : '<td title="'+this.name+'">'+this.label+'</td>'
+	    html : '<td title="'+this.name+'">'+(this.label?this.label:this.name)+'</td>'
 	});
 	var td=$('<td/>');
 	var label=$('<label>Len: </label>');
@@ -541,7 +561,7 @@ Indi.iblob = (function($) {
 	});
 	this.displaycontentelt=$('<td/>', {
 	    attr : { colspan : 5 }, 
-	    //css : { display: 'none' },
+	    //css : { width: '100%' },
 	    html : this.name+' contents'
 	});
 	this.displayelt.append(this.displaycontentelt);
@@ -568,6 +588,10 @@ Indi.iblob = (function($) {
 		this.blob=Indi.util.b64decode(item.blob);
 		if (this.format == '.gif' || this.format == '.jpg' || this.format == '.jpeg' || this.format == '.png')
 		    this.b64blob=item.blob; // keep b64 data to display images as data url
+		if (this.displaycontent) {
+		    this.displaycontent.reload();
+		    //this.displaycontent.refresh();
+		}
 	    }
 	    this.drawstate();
 	},
@@ -628,15 +652,17 @@ Indi.iblob = (function($) {
 		if (!this.displaycontent) {
 		    this.buildcontent();
 		    if (this.displaycontent) {
+			this.displaycontent.reload();
+			//this.displaycontent.refresh();
 			this.displaycontentelt.empty();
 			this.displaycontentelt.append(this.displaycontent.getdivelt());
 			this.displayelt.children('td:first').empty();
 			this.displayelt.children('td:first').append(this.displaycontent.name());
 		    }
 		}
-		if (this.displaycontent) 
-		    this.displaycontent.refresh();
 		this.displayelt.show();
+		//if (this.displaycontent) 
+		//    this.displaycontent.refresh();
 		this.buttonDisplay.html('Hide');
 	    } else {
 		this.displayelt.hide();
@@ -716,7 +742,7 @@ Indi.property = (function($) {
 	this.ws=this.device.server.ws;
 	this.id=this.device.id+'_'+this.name;
 	this.divelt=$('<fieldset/>', {
-	    html : '<legend><span style="font-style:italic" title="'+this.name+'">'+this.label+'</span></legend>'
+	    html : '<legend><span style="font-style:italic" title="'+this.name+'">'+(this.label?this.label:this.name)+'</span></legend>'
 	});
 	switch (this.type) {
 	case Indi.INDI_TYPE.INDI_TEXT:
