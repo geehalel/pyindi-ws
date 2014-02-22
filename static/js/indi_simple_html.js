@@ -109,7 +109,7 @@ Indi.util =  {
 	    refresh : function() {
 		this.textarea.html(this.iblob.blob);
 	    },
-	    name: function () {
+	    controls: function () {
 		return 'simpletext';
 	    }
 	};
@@ -118,12 +118,17 @@ Indi.util =  {
     }(jQuery)),
 
      simpleimageviewer: (function($) {
+	var canvasdim = {width: 400, height: 300};
+
 	var simpleimageviewer = function(iblob) {
 	    this.iblob = iblob;
+	    this.divelt=$('<div></div>',{
+		css: {'text-align': 'center'}
+	    });
 	    this.canvas=$('<canvas></canvas>', {
-		    attr: {width: '400', height: '300'},
-		    css: {border:  '1px solid'},
-		    html: this.iblob.name+' canvas display not supported by your browser'
+		attr: {width: canvasdim.width, height: canvasdim.height},
+		css: {border: '1px solid'},
+		html: this.iblob.name+' canvas display not supported by your browser'
 	    });
 	    this.ctx=this.canvas[0].getContext('2d');
 	    this.image=new Image();
@@ -133,30 +138,174 @@ Indi.util =  {
 		//alert('image for '+viewer.iblob.name+' loaded');
 		viewer.refresh();
 	    });
-
-
 	    this.format=this.iblob.format.substring(1);
+	    this.compressed=(this.format.charAt(this.format.length - 1) == 'z');
+	    if (this.compressed) {
+		this.format=this.iblob.format.substring(1, this.iblob.format.length - 1);
+		//this.iblob=
+	    }
+	    this.divelt.append(this.canvas);
+	    // Controls
+	    this.controlsdiv=$('<table></table>',{
+		//attr: {width: '400', height: '300'},
+		css: {border:  '1px solid', 'font-size':'smaller'}
+	    });
+	    this.widthelt=$('<td></td>');
+	    this.controlsdiv.append('<tr><th>Width</th></tr>');
+	    this.controlsdiv.append('<tr>',this.widthelt,'</tr>');
+	    this.heightelt=$('<td></td>');
+	    this.controlsdiv.append('<tr><th>Height</th></tr>');
+	    this.controlsdiv.append('<tr>',this.heightelt,'</tr>');
+	    // pan/zoom
+	    this.zoom={ value: 1.0, x: 1.0, y: 1.0, max: 1.0, step: 1.1};
+	    this.center={x:0, y: 0, imgx: 0, imgy: 0};
+	    this.orig={x:0, y: 0, imgx: 0, imgy: 0};
+	    this.size={x:0, y: 0, imgx: 0, imgy: 0};
+	    this.mouse={x: 0, y: 0, imgx: 0, imgy:0};
+	    this.dragstart=false;
+	    this.zoomrange=$('<input/>', {
+		attr: {type: "range", min: "1", max: "301"},
+		css: {width: '300px', 'text-align': 'none'},
+	    });
+	    this.divelt.append('<br/>', '<span>', 'Fit', this.zoomrange, 'Max', '</span>');
+	    this.zoomelt=$('<td></td>');
+	    this.controlsdiv.append('<tr><th>Zoom</th></tr>');
+	    this.controlsdiv.append('<tr>',this.zoomelt,'</tr>');
+	    this.centerxelt=$('<td></td>');
+	    this.centeryelt=$('<td></td>');
+	    this.controlsdiv.append('<tr><th>Center</th></tr>');
+	    this.controlsdiv.append('<tr>',this.centerxelt,'</tr>');	    
+	    this.controlsdiv.append('<tr>',this.centeryelt,'</tr>');
+	    
+	    this.zoomrange.on('change', {context: this}, function(evt) {
+		var viewer=evt.data.context;
+		var z = viewer.zoomrange.val();
+		var zoomvalue = Math.pow(viewer.zoom.step, (z / viewer.zoomrange.attr('step')));
+		viewer.redrawzoom(zoomvalue);
+		viewer.zoomelt.empty();
+		viewer.zoomelt.append(((viewer.zoom.value / viewer.zoom.max) * 100).toFixed(2)+'%');
+	    });
+	    this.canvas.on('mousedown', {context: this}, function(evt) {
+		var viewer=evt.data.context;
+		var offset=viewer.canvas.offset();
+		if (evt.which != 1) return;
+		viewer.dragstart=true;
+		viewer.mouse.x = evt.pageX - offset.left;
+		viewer.mouse.y = evt.pageY - offset.top;
+		//alert('mousedown page x '+evt.pageX+' y '+evt.pageY + ' canvas left '+offset.left+' top '+offset.top);
+		/*
+		  viewer.canvas.on('mousemove', {context: viewer}, function(evt) {
+		    var viewer=evt.data.context;
+		    var offset=viewer.canvas.offset();
+		    viewer.centerxelt.empty();
+		    viewer.centerxelt.append((evt.pageX - offset.left).toFixed(2));
+		    viewer.centeryelt.empty();
+		    viewer.centeryelt.append((evt.pageY - offset.top).toFixed(2));
+		});
+		*/
+		viewer.canvas.on('mouseup', {context: viewer}, function(evt) {
+		    var viewer=evt.data.context;
+		    var offset=viewer.canvas.offset();
+		    if (evt.which != 1) return;
+		    //alert('mouseup page x '+evt.pageX+' y '+evt.pageY + ' canvas left '+offset.left+' top '+offset.top);
+		    var dx = (viewer.mouse.x - (evt.pageX - offset.left)) * viewer.zoom.max / viewer.zoom.value;
+		    var dy = (viewer.mouse.y - (evt.pageY - offset.top)) * viewer.zoom.max / viewer.zoom.value;
+		    viewer.redrawpan(dx, dy);
+		    viewer.canvas.off('mousemove');
+		    viewer.canvas.off('mouseup');
+		});
+	    });
+
 	};
    
 	simpleimageviewer.prototype = {
 	    constructor: simpleimageviewer,
 	    getdivelt : function () {
-		return this.canvas;
+		return this.divelt;
 	    },
 	    reload: function() {
 		this.image.src='data:image/'+this.format+';base64,'+this.iblob.b64blob;
 	    },
-	    refresh : function() {
-		//this.canvas[0].width=this.image.width();
-		//this.canvas[0].height=this.image.height();
-		//this.ctx.drawImage(this.image[0], 0, 0, this.image.width(), this.image.height(),   // clip image
-		//		               0, 0, this.image.width(), this.image.height()    // reduce/stretch image
-		this.ctx.drawImage(this.image, 0, 0, this.image.width, this.image.height, 0, 0, 400, 300
+	    redrawpan: function(dx, dy) {
+		this.ctx.clearRect(0, 0, canvasdim.width, canvasdim.height);
+		if (this.orig.imgx + dx < 0)
+		    this.orig.imgx = 0;
+		else if (this.orig.imgx + dx + this.size.imgx > this.image.width)
+		    this.orig.imgx = this.image.width -  this.size.imgx;
+		else
+		    this.orig.imgx +=dx;
+		if (this.orig.imgy + dy < 0)
+		    this.orig.imgy = 0;
+		else if (this.orig.imgy + dy + this.size.imgy > this.image.height)
+		    this.orig.imgy = this.image.height -  this.size.imgy;
+		else
+		    this.orig.imgy +=dy;
+		this.centerxelt.empty();
+		this.centerxelt.append((this.orig.imgx + (this.size.imgx/2)).toFixed(0));
+		this.centeryelt.empty();
+		this.centeryelt.append((this.orig.imgy+(this.size.imgy/2)).toFixed(0));
+		this.ctx.drawImage(this.image, this.orig.imgx, this.orig.imgy, this.size.imgx, this.size.imgy, 
+				   this.orig.x, this.orig.y, this.size.x, this.size.y
 				  );
-
 	    },
-	    name: function () {
-		return 'simpleimage';
+	    redrawzoom: function(zoomvalue) {
+		this.ctx.clearRect(0, 0, canvasdim.width, canvasdim.height);
+		zoomvalue=Math.min(zoomvalue, this.zoom.max);
+		//this.orig.imgx += ((this.image.width/this.zoom.value) - (this.image.width/zoomvalue)) / 2;
+		//this.orig.imgy += ((this.image.height/this.zoom.value) - (this.image.height/zoomvalue)) / 2;
+		var dx = ((this.image.width/this.zoom.value) - (this.image.width/zoomvalue)) / 2;
+		var dy = ((this.image.height/this.zoom.value) - (this.image.height/zoomvalue)) / 2;
+		if (this.orig.imgx + dx < 0)
+		    this.orig.imgx = 0;
+		else if (this.orig.imgx + dx + this.size.imgx > this.image.width)
+		    this.orig.imgx = this.image.width -  this.size.imgx;
+		else
+		    this.orig.imgx +=dx;
+		if (this.orig.imgy + dy < 0)
+		    this.orig.imgy = 0;
+		else if (this.orig.imgy + dy + this.size.imgy > this.image.height)
+		    this.orig.imgy = this.image.height -  this.size.imgy;
+		else
+		    this.orig.imgy +=dy;		
+		this.orig.x = Math.max(0, (canvasdim.width / 2) - (this.image.width * zoomvalue/ (2 * this.zoom.max)));
+		this.orig.y = Math.max(0, (canvasdim.height / 2) - (this.image.height * zoomvalue / (2 * this.zoom.max)));
+		this.size.imgx = this.image.width/zoomvalue;
+		this.size.imgy = this.image.height/zoomvalue
+		this.size.x = Math.min(canvasdim.width, (this.image.width * zoomvalue / this.zoom.max));
+		this.size.y = Math.min(canvasdim.height, (this.image.height * zoomvalue / this.zoom.max));
+		this.centerxelt.empty();
+		this.centerxelt.append((this.orig.imgx + (this.size.imgx/2)).toFixed(0));
+		this.centeryelt.empty();
+		this.centeryelt.append((this.orig.imgy+(this.size.imgy/2)).toFixed(0));
+		this.ctx.drawImage(this.image, this.orig.imgx, this.orig.imgy, this.size.imgx, this.size.imgy, // clip image
+				   this.orig.x, this.orig.y, this.size.x, this.size.y                // reduce/stretch image
+				  );
+		this.zoom.value = zoomvalue;
+	    },
+	    refresh : function() {
+		this.zoom.max=Math.max((this.image.width/canvasdim.width), (this.image.height/canvasdim.height));
+		this.zoomrange.attr('step', 300 / Math.ceil(Math.log(this.zoom.max) / Math.log(this.zoom.step)));
+		this.widthelt.empty();this.widthelt.append(this.image.width.toString());
+		this.heightelt.empty();this.heightelt.append(this.image.height.toString());
+		this.orig.imgx = 0; this.orig.imgy = 0;
+		this.zoom.value = 1.0;
+		this.redrawzoom(1.0);
+		/*this.zoom.value=1.0;
+		this.zoomrange.attr('step', 300 / Math.ceil(Math.log(this.zoom.max) / Math.log(this.zoom.step)));
+		this.center.x=canvasdim.width / 2; this.center.y=canvasdim.height / 2;
+		this.center.imgx = this.image.width / 2; this.center.imgy = this.image.height / 2;
+		this.orig.x = (canvasdim.width / 2) - (this.image.width / (2 * this.zoom.max));
+		this.orig.y = (canvasdim.height / 2) - (this.image.height / (2 * this.zoom.max));
+		this.orig.imgx = 0; this.orig.imgy = 0;
+		this.widthelt.empty();this.widthelt.append(this.image.width.toString());
+		this.heightelt.empty();this.heightelt.append(this.image.height.toString());		
+		this.ctx.drawImage(this.image, this.orig.imgx, this.orig.imgy, this.image.width, this.image.height, 
+				   this.orig.x, this.orig.y, (this.image.width / this.zoom.max), (this.image.height / this.zoom.max)
+				  );
+		*/
+	    },
+	    controls: function () {
+		return this.controlsdiv;
 	    }
 	};
 	
@@ -494,9 +643,9 @@ Indi.iblob = (function($) {
 	this.blob=null;
 	this.ws=this.property.device.server.ws;
 	this.id= this.property.id+'_'+this.name;
-	this.inputbloblen=$('<input type="number" readonly="readonly">');
-	this.inputblobsize=$('<input type="number" readonly="readonly">');
-	this.inputformat=$('<input type="text" readonly="readonly">');
+	this.inputbloblen=$('<input type="number" readonly="readonly" size="8">');
+	this.inputblobsize=$('<input type="number" readonly="readonly" size="8">');
+	this.inputformat=$('<input type="text" readonly="readonly" size="8">');
 	this.inputblob=$('<input type="file">');
 	this.inputenable=$('<input type="checkbox">');
 	//this.setvalue(this.state);
@@ -657,7 +806,7 @@ Indi.iblob = (function($) {
 			this.displaycontentelt.empty();
 			this.displaycontentelt.append(this.displaycontent.getdivelt());
 			this.displayelt.children('td:first').empty();
-			this.displayelt.children('td:first').append(this.displaycontent.name());
+			this.displayelt.children('td:first').append(this.displaycontent.controls());
 		    }
 		}
 		this.displayelt.show();
