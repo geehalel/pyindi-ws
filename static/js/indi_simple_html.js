@@ -251,8 +251,6 @@ Indi.util =  {
 	    redrawzoom: function(zoomvalue) {
 		this.ctx.clearRect(0, 0, canvasdim.width, canvasdim.height);
 		zoomvalue=Math.min(zoomvalue, this.zoom.max);
-		//this.orig.imgx += ((this.image.width/this.zoom.value) - (this.image.width/zoomvalue)) / 2;
-		//this.orig.imgy += ((this.image.height/this.zoom.value) - (this.image.height/zoomvalue)) / 2;
 		var dx = ((this.image.width/this.zoom.value) - (this.image.width/zoomvalue)) / 2;
 		var dy = ((this.image.height/this.zoom.value) - (this.image.height/zoomvalue)) / 2;
 		if (this.orig.imgx + dx < 0)
@@ -290,19 +288,6 @@ Indi.util =  {
 		this.orig.imgx = 0; this.orig.imgy = 0;
 		this.zoom.value = 1.0;
 		this.redrawzoom(1.0);
-		/*this.zoom.value=1.0;
-		this.zoomrange.attr('step', 300 / Math.ceil(Math.log(this.zoom.max) / Math.log(this.zoom.step)));
-		this.center.x=canvasdim.width / 2; this.center.y=canvasdim.height / 2;
-		this.center.imgx = this.image.width / 2; this.center.imgy = this.image.height / 2;
-		this.orig.x = (canvasdim.width / 2) - (this.image.width / (2 * this.zoom.max));
-		this.orig.y = (canvasdim.height / 2) - (this.image.height / (2 * this.zoom.max));
-		this.orig.imgx = 0; this.orig.imgy = 0;
-		this.widthelt.empty();this.widthelt.append(this.image.width.toString());
-		this.heightelt.empty();this.heightelt.append(this.image.height.toString());		
-		this.ctx.drawImage(this.image, this.orig.imgx, this.orig.imgy, this.image.width, this.image.height, 
-				   this.orig.x, this.orig.y, (this.image.width / this.zoom.max), (this.image.height / this.zoom.max)
-				  );
-		*/
 	    },
 	    controls: function () {
 		return this.controlsdiv;
@@ -310,6 +295,163 @@ Indi.util =  {
 	};
 	
 	return simpleimageviewer;
+    }(jQuery)),
+
+    fitsviewer: (function($) {
+	var viewOptions= {
+	    header: { label:'View Header'},
+	    image: { label:'View Image'},
+	    table: { label:'View Data'},
+	    bintable: { label:'View Binary'}
+	};
+	var fitsviewer = function(iblob) {
+	    var tmpelt=null;
+	    this.iblob = iblob;
+	    this.fits=null;
+	    this.blobblob=null;
+	    this.hdus=new Array();
+	    this.divelt=$('<div></div>',{
+		css: {'text-align': 'center'}
+	    });
+	    // Controls
+	    this.controlsdiv=$('<table></table>',{
+		//attr: {width: '400', height: '300'},
+		css: {border:  '1px solid', 'font-size':'smaller'}
+	    });
+	    this.hduslist=$('<tr></tr>', {
+		html: '<th colspan="4">HDUs</th>'
+	    });
+	    this.selected=null;
+	    this.current=null;
+	    this.hduselected=$('<tr></tr>', {
+		html: '<th colspan="4">None</th>'
+	    });	    
+	    this.selecthdu=$('<select></select>');
+	    for (var v in viewOptions) { 
+		var opt=viewOptions[v];
+		var optelt=$('<option value="'+opt+'">'+opt.label+'</option>');
+		this.selecthdu.append(optelt);
+		opt.optelt=optelt;
+	    }
+	    this.controlsdiv.append(this.hduslist);
+	    this.controlsdiv.append(this.hduselected);
+	    tmpelt=$('<td colspan="4"></td>');
+	    tmpelt.append(this.selecthdu);
+	    this.controlsdiv.append($('<tr></tr>').append(tmpelt));
+	};
+
+	fitsviewer.prototype = {
+	    constructor: fitsviewer,
+	    getdivelt : function () {
+		return this.divelt;
+	    },
+	    buildhduelt: function (index, hdu) {
+		var elt = $('<tr></tr>');
+		var sel=$('<td title="Select"><button>'+index+'</button></td>');
+		var hdr=hdu.header;
+		elt.append(sel);
+		sel.on('click', {context: this}, function(evt) {
+		    evt.data.context.setcurrenthdu(index);
+		});
+		if (hdr.isPrimary())
+		    elt.append('<td title="Primary">P</td>');
+		else if (hdr.isExtension())
+		    elt.append('<td title="Extension">E</td>');
+		else
+		    elt.append('<td title="Unknown">?</td>');
+		if (hdr.hasDataUnit())
+		    elt.append('<td title="Has Data">x</td>');	
+		else
+		    elt.append('<td title="No Data">-</td>');
+		elt.append('<td title="Data Type">'+hdr.getDataType()+'</td>');
+		return elt;
+	    },
+	    buildfitsheaderelt: function (index, hdu) {
+		var elt = $('<table></table>',{
+		    css : {border: '1px solid', 'font-size': 'smaller'}
+		});
+		var hdr=hdu.header;
+		elt.append('<tr><th colspan="4">FITS Header for HDU'+index+'</th></tr>');
+		for (var card in hdr.cards) {
+		    var c=hdr.cards[card];
+		    if (Array.isArray(c)) {
+			if (c.length == 0) {
+			    elt.append('<tr><td></td><td>'+card+'</td><td colspan="2"><i>empty</i></td>');
+			} else {
+			    elt.append('<tr><td rowspan="'+c.length+'"></td><td rowspan="'+c.length+'">'+card+
+				       '</td><td colspan="2">'+c[0]+'</td>');
+			    for (var l=1; l < c.length; l++) {
+				elt.append('<tr><td colspan="2">'+c[l]+'</td>');		
+			    }
+			} 
+		    } else {
+			elt.append('<tr><td>'+c.index+'</td><td>'+card+'</td><td>'+c.value+'</td><td>'+c.comment+'</td></tr>');
+		    }
+		}
+		return elt;
+	    },
+	    buildfitsimageelt: function (index, hdu) {
+		return null;
+	    },
+	    reload: function () {
+		this.fits=null;
+		this.blobblob=null;
+		this.blobblob = new Blob([Indi.util.str2ab(this.iblob.blob)], {type: 'application/octet-binary'});
+		this.fits=new astro.FITS( this.blobblob, this.refresh, {context: this});
+		if (!this.fits) alert ('fitsviewer: can not load fits');
+	    },
+	    refresh : function () {
+		var hdu = null;
+		if (!this.fits) alert ('fitsviewer: can not load fits');
+		hdu=this.hdus.pop();
+		while (hdu) {
+		    if (hdu.fitsheaderelt) hdu.fitsheaderelt.remove();
+		    if (hdu.fitsimageelt) hdu.fitsimageelt.remove();
+		    hdu.elt.remove();
+		    hdu=this.hdus.pop();
+		} 
+		for (var index in this.fits.hdus) {
+		    var h = this.fits.hdus[index];
+		    var e=this.buildhduelt(index, h);
+		    var he=this.buildfitsheaderelt(index,h);
+		    var ie=this.buildfitsimageelt(index,h);
+		    this.hduslist.after(e);
+		    this.hdus.push({elt: e, fitsheaderelt: he, fitsimageelt: ie});
+		    
+		}
+		this.setcurrenthdu(0);
+		//this.fits.hdus.length
+
+	    },
+	    setcurrenthdu: function(index) {
+		this.selected=index;
+		this.current=this.hdus[this.selected];
+		this.divelt.empty();		
+		this.hduselected.empty();
+		this.hduselected.append('<th colspan="4">HDU'+this.selected+'</th>');
+		this.resetselecthdu();
+		if (this.current.fitsheaderelt) {
+		    this.divelt.append(this.current.fitsheaderelt);		
+		    this.setselecthdu('header');
+		}
+		if (this.current.fitsimageelt) {
+		    this.divelt.append(this.current.fitsimageelt);		
+		    this.setselecthdu('image');
+		}
+	    },
+	    resetselecthdu: function() {
+		for (var v in viewOptions)
+		    viewOptions[v].optelt.attr('disabled', 'disabled');
+	    },
+	    setselecthdu: function(value) {
+		viewOptions[value].optelt.removeAttr('disabled');
+	    },
+	    controls: function () {
+		return this.controlsdiv;
+	    }
+	};
+	
+	return fitsviewer;
     }(jQuery)),
 
 };
@@ -831,6 +973,9 @@ Indi.iblob = (function($) {
 	    case '.png':
 		this.displaycontent=new Indi.util.simpleimageviewer(this);
 		break;
+	    case '.fits':
+		this.displaycontent=new Indi.util.fitsviewer(this);
+		break;		
 	    }
 	},
 	sendnewvalue: function () {
