@@ -304,6 +304,7 @@ Indi.util =  {
 	    table: { label:'View Data'},
 	    bintable: { label:'View Binary'}
 	};
+	var viewDims =  { width: 400, height: 300 };
 	var fitsviewer = function(iblob) {
 	    var tmpelt=null;
 	    this.iblob = iblob;
@@ -311,7 +312,7 @@ Indi.util =  {
 	    this.blobblob=null;
 	    this.hdus=new Array();
 	    this.divelt=$('<div></div>',{
-		css: {'text-align': 'center'}
+		css: {width: viewDims.width+'px', height: viewDims.height+'px', overflow: 'hidden'}
 	    });
 	    // Controls
 	    this.controlsdiv=$('<table></table>',{
@@ -388,10 +389,60 @@ Indi.util =  {
 			elt.append('<tr><td>'+c.index+'</td><td>'+card+'</td><td>'+c.value+'</td><td>'+c.comment+'</td></tr>');
 		    }
 		}
+		elt.hide();
 		return elt;
 	    },
+	    // Define callback for when pixels have been read from file
+	     createVisualization: function(arr, opts) {
+		 var viewer=opts.context;
+		 // Get dataunit, width, and height from options
+		 var dataunit = opts.dataunit;
+		 var width = dataunit.width;
+		 var height = dataunit.height;
+		 
+		 var factor= Math.min(viewDims.width / width, viewDims.height / height);
+		 // Get the minimum and maximum pixels
+		 var extent = dataunit.getExtent(arr);
+		 
+		 // Get the DOM element
+		 var el =  opts.el;
+		 
+		 // Initialize a WebFITS context with a viewer of size width
+		 var raw = new rawimage(el, factor * width);
+		 //var raw = new rawimage(el, 400);
+		 if (!raw)
+		     alert('Can not create rawimage(webgl absent?)');
+		 
+		 // Enable pan and zoom controls
+		 raw.setupControls();
+		 
+		 //raw.zoom = (factor/2) / width;
+		 raw.zoom = 2.0 / width;
+		 // Load array representation of image
+		 raw.loadImage(viewer.iblob.name, arr, width, height);
+		 
+		 // Set the intensity range and stretch
+		 raw.setExtent(extent[0], extent[1]);
+		 raw.setStretch('linear');
+		 
+	     },
 	    buildfitsimageelt: function (index, hdu) {
-		return null;
+		var elt = $('<div></div>',{
+		    css : {border: '1px solid'}
+		});
+		var dataunit=hdu.data;
+
+		// Set options to pass to the next callback
+		var opts = {
+		    context: this,
+		    dataunit: dataunit,
+		    el: elt[0]
+		};
+    
+		// Get pixels representing the image and pass callback with options
+		dataunit.getFrame(0, this.createVisualization, opts);
+		elt.hide();
+		return elt;
 	    },
 	    reload: function () {
 		this.fits=null;
@@ -433,10 +484,15 @@ Indi.util =  {
 		if (this.current.fitsheaderelt) {
 		    this.divelt.append(this.current.fitsheaderelt);		
 		    this.setselecthdu('header');
+		    this.setselectedhdu('header');
+		    this.current.fitsheaderelt.show();
 		}
 		if (this.current.fitsimageelt) {
 		    this.divelt.append(this.current.fitsimageelt);		
 		    this.setselecthdu('image');
+		    this.setselectedhdu('image');
+		    this.current.fitsheaderelt.hide();
+		    this.current.fitsimageelt.show();
 		}
 	    },
 	    resetselecthdu: function() {
@@ -445,6 +501,11 @@ Indi.util =  {
 	    },
 	    setselecthdu: function(value) {
 		viewOptions[value].optelt.removeAttr('disabled');
+	    },
+	    setselectedhdu: function(value) {
+		for (var v in viewOptions)
+		    viewOptions[v].optelt.removeAttr('selected');
+		viewOptions[value].optelt.attr('selected', 'selected');
 	    },
 	    controls: function () {
 		return this.controlsdiv;
