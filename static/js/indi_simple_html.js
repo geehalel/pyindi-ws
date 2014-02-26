@@ -304,7 +304,16 @@ Indi.util =  {
 	    table: { label:'View Data'},
 	    bintable: { label:'View Binary'}
 	};
-	var viewDims =  { width: 400, height: 300 };
+	//use square viewport for astro.js/rawimage
+	var viewDims =  { width: 512, height: 512 };
+	var colormaps= [
+	    'base64','Accent','Blues','BrBG','BuGn','BuPu','CMRmap','Dark2','GnBu','Greens','Greys','OrRd','Oranges','PRGn',
+	    'Paired','Pastel1','Pastel2','PiYG','PuBuGn','PuBu','PuOr','PuRd','Purples','RdBu','RdGy','RdPu','RdYlBu','RdYlGn',
+	    'Reds','Set1','Set2','Set3','Spectral','YlGnBu','YlGn','YlOrBr','YlOrRd','afmhot','autumn','binary','bone','brg',
+	    'bwr','cool','coolwarm','copper','cubehelix','flag','gist_earth','gist_gray','gist_heat','gist_ncar','gistainbow',
+	    'gist_stern','gist_yarg','gnuplot2','gnuplot','gray','hot','hsv','jet','ocean','pink','prism','rainbow','seismic',
+	    'spectral','spring','summer','terrain','winter'
+	];
 	var fitsviewer = function(iblob) {
 	    var tmpelt=null;
 	    this.iblob = iblob;
@@ -312,7 +321,8 @@ Indi.util =  {
 	    this.blobblob=null;
 	    this.hdus=new Array();
 	    this.divelt=$('<div></div>',{
-		css: {width: viewDims.width+'px', height: viewDims.height+'px', overflow: 'hidden'}
+		css: {width: (viewDims.width+2)+'px', height: (viewDims.height+30+2)+'px', 
+		      'overflow-x': 'auto', 'overflow-y': 'auto'}
 	    });
 	    // Controls
 	    this.controlsdiv=$('<table></table>',{
@@ -327,18 +337,24 @@ Indi.util =  {
 	    this.hduselected=$('<tr></tr>', {
 		html: '<th colspan="4">None</th>'
 	    });	    
-	    this.selecthdu=$('<select></select>');
+	    this.selectview=$('<select></select>');
 	    for (var v in viewOptions) { 
 		var opt=viewOptions[v];
-		var optelt=$('<option value="'+opt+'">'+opt.label+'</option>');
-		this.selecthdu.append(optelt);
+		var optelt=$('<option value="'+v+'">'+opt.label+'</option>');
+		this.selectview.append(optelt);
 		opt.optelt=optelt;
 	    }
+	    this.selectview.on('change', {context: this}, function(evt) {
+		var viewer = evt.data.context;
+		viewer.setview(this[this.selectedIndex].value);
+	    	//alert('view changed');
+	    });
 	    this.controlsdiv.append(this.hduslist);
 	    this.controlsdiv.append(this.hduselected);
 	    tmpelt=$('<td colspan="4"></td>');
-	    tmpelt.append(this.selecthdu);
+	    tmpelt.append(this.selectview);
 	    this.controlsdiv.append($('<tr></tr>').append(tmpelt));
+	    this.currentview=null;
 	};
 
 	fitsviewer.prototype = {
@@ -361,7 +377,7 @@ Indi.util =  {
 		else
 		    elt.append('<td title="Unknown">?</td>');
 		if (hdr.hasDataUnit())
-		    elt.append('<td title="Has Data">x</td>');	
+ 		    elt.append('<td title="Has Data">x</td>');	
 		else
 		    elt.append('<td title="No Data">-</td>');
 		elt.append('<td title="Data Type">'+hdr.getDataType()+'</td>');
@@ -395,17 +411,20 @@ Indi.util =  {
 	    // Define callback for when pixels have been read from file
 	     createVisualization: function(arr, opts) {
 		 var viewer=opts.context;
+		 var stretchselect=opts.stretchselect;
+		 var colormapselect=opts.colormapselect;
 		 // Get dataunit, width, and height from options
 		 var dataunit = opts.dataunit;
 		 var width = dataunit.width;
 		 var height = dataunit.height;
 		 
-		 var factor= Math.min(viewDims.width / width, viewDims.height / height);
+
 		 // Get the minimum and maximum pixels
 		 var extent = dataunit.getExtent(arr);
 		 
 		 // Get the DOM element
 		 var el =  opts.el;
+		 var factor= Math.min(viewDims.width / width, viewDims.height / height);
 		 
 		 // Initialize a WebFITS context with a viewer of size width
 		 var raw = new rawimage(el, factor * width);
@@ -424,19 +443,54 @@ Indi.util =  {
 		 // Set the intensity range and stretch
 		 raw.setExtent(extent[0], extent[1]);
 		 raw.setStretch('linear');
+		 for (var stretch in raw.fragmentShaders) {
+		     var stretchoptelt=$('<option value="'+raw.fragmentShaders[stretch]+'">'+raw.fragmentShaders[stretch]+'</option>');
+		     if (raw.fragmentShaders[stretch] == 'linear') stretchoptelt.attr('selected', 'selected');
+		     stretchselect.append(stretchoptelt);
+		 }
+		 stretchselect.on('change', {context: this, raw: raw}, function(evt) {
+		     var stretch = this[this.selectedIndex].value;
+		     evt.data.raw.setStretch(stretch);
+		 });
+
+		 raw.setColorMap('binary');
+		 for (var cmap in colormaps) {
+		     var cmapoptelt=$('<option value="'+colormaps[cmap]+'">'+colormaps[cmap]+'</option>');
+		     if (colormaps[cmap] == 'binary') cmapoptelt.attr('selected', 'selected');
+		     colormapselect.append(cmapoptelt);
+		 }
+		 colormapselect.on('change', {context: this, raw: raw}, function(evt) {
+		     var cmap = this[this.selectedIndex].value;
+		     evt.data.raw.setColorMap(cmap);
+		 });		 
 		 
+		 raw.setCursor();
 	     },
 	    buildfitsimageelt: function (index, hdu) {
 		var elt = $('<div></div>',{
 		    css : {border: '1px solid'}
 		});
+		var controlelt = $('<div></div>',{
+		    //css : {border: '1px solid'}
+		});		
+		var visuelt = $('<div></div>',{
+		    //css : {border: '1px solid'}
+		});
+		var stretchselect = $('<select></select>');
+		var colormapselect = $('<select></select>');
+
 		var dataunit=hdu.data;
+
+		controlelt.append(stretchselect, colormapselect);
+		elt.append(controlelt, visuelt);
 
 		// Set options to pass to the next callback
 		var opts = {
 		    context: this,
 		    dataunit: dataunit,
-		    el: elt[0]
+		    el: visuelt[0],
+		    stretchselect: stretchselect,
+		    colormapselect: colormapselect
 		};
     
 		// Get pixels representing the image and pass callback with options
@@ -480,32 +534,53 @@ Indi.util =  {
 		this.divelt.empty();		
 		this.hduselected.empty();
 		this.hduselected.append('<th colspan="4">HDU'+this.selected+'</th>');
-		this.resetselecthdu();
+		this.resetselectview();
 		if (this.current.fitsheaderelt) {
 		    this.divelt.append(this.current.fitsheaderelt);		
-		    this.setselecthdu('header');
-		    this.setselectedhdu('header');
-		    this.current.fitsheaderelt.show();
+		    this.enableselectview('header');
+		    this.setselectedview('header');
+		    this.setview('header');
 		}
 		if (this.current.fitsimageelt) {
 		    this.divelt.append(this.current.fitsimageelt);		
-		    this.setselecthdu('image');
-		    this.setselectedhdu('image');
-		    this.current.fitsheaderelt.hide();
-		    this.current.fitsimageelt.show();
+		    this.enableselectview('image');
+		    this.setselectedview('image');
+		    this.setview('image');
 		}
 	    },
-	    resetselecthdu: function() {
+	    resetselectview: function() {
 		for (var v in viewOptions)
 		    viewOptions[v].optelt.attr('disabled', 'disabled');
 	    },
-	    setselecthdu: function(value) {
+	    enableselectview: function(value) {
 		viewOptions[value].optelt.removeAttr('disabled');
 	    },
-	    setselectedhdu: function(value) {
+	    setselectedview: function(value) {
 		for (var v in viewOptions)
 		    viewOptions[v].optelt.removeAttr('selected');
 		viewOptions[value].optelt.attr('selected', 'selected');
+	    },
+	    setview:  function(value) {
+		if (this.currentview) this.currentview.hide();
+		switch (value) {
+		case 'header': 
+		    if (this.current.fitsheaderelt) 
+			this.currentview = this.current.fitsheaderelt;
+		    break;
+		case 'image': 
+		    if (this.current.fitsimageelt)
+			this.currentview = this.current.fitsimageelt;
+		    break;
+		case 'table': 
+		    if (this.current.fitstableelt)
+			this.currentview = this.current.fitstableelt;
+		    break;
+		case 'bintable': 
+		    if (this.current.fitsbintableelt)
+			this.currentview = this.current.fitsbintableelt;
+		    break;
+		}
+		if (this.currentview) this.currentview.show();
 	    },
 	    controls: function () {
 		return this.controlsdiv;
