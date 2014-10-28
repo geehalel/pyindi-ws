@@ -3,7 +3,8 @@ rawimage = (function(){
     var canvasStyle, overlayStyle, parentStyle;
     
     this.el = el;
-    this.width = this.height = dimension;
+    //this.width = this.height = dimension;
+    this.width = dimension.width; this.height = dimension.height;
     this.reset();
     
     // Createa a canvas for the WebGL context
@@ -28,9 +29,11 @@ rawimage = (function(){
     
     // TODO: Rename this function since porting to only WebGL implementation
     if (!this.getContext()) return null;
-    
-    this.offsetLeft = this.canvas.offsetLeft;
-    this.offsetTop = this.canvas.offsetTop;
+    var rect = this.canvas.getBoundingClientRect(); 
+    this.offsetLeft = rect.left;
+    this.offsetTop = rect.top;
+    //this.offsetLeft = this.canvas.offsetLeft;
+    //this.offsetTop = this.canvas.offsetTop;
     
     parentStyle = this.canvas.parentElement.style;
     parentStyle.width = "" + this.canvas.width + "px";
@@ -53,12 +56,16 @@ rawimage = (function(){
     this.drag = false;
     
     // TODO: Dynamically set min and max zoom based on the image dimension
-    this.zoom = 2 / this.width;
-    this.minZoom = this.zoom / 8;
-    this.maxZoom = 20 * this.zoom;
-    this.zoomX = this.zoom;
-    this.zoomY = this.zoom;
-    
+    this.zoomX = 2 / this.width;
+    this.minZoomX = this.zoomX / 8;
+    this.maxZoomX = 20 * this.zoomX;
+    this.zoomY = 2 / this.height;
+    this.minZoomY = this.zoomY / 8;
+    this.maxZoomY = 20 * this.zoomY;   
+
+    this.flipX = false;
+    this.flipY = true;
+
     this.crosshair = false;
   };
   
@@ -107,13 +114,19 @@ rawimage = (function(){
       "attribute vec2 aTextureCoordinate;",
       
       "uniform vec2 uOffset;",
-      "uniform float uScale;",
+      "uniform float uScaleX;",
+      "uniform float uScaleY;",
+      "uniform bool uFlipX;",
+      "uniform bool uFlipY;",
       
       "varying vec2 vTextureCoordinate;",
       
       "void main() {",
         "vec2 position = aPosition + uOffset;",
-        "position = position * uScale;",
+        "position.x = position.x * uScaleX;",
+        "position.y = position.y * uScaleY;",
+        "if (uFlipX) { position.x =  - position.x; }",
+        "if (uFlipY) { position.y =  - position.y; }",
         "gl_Position = vec4(position, 0.0, 1.0);",
         
         "vTextureCoordinate = aTextureCoordinate;",
@@ -441,10 +454,12 @@ rawimage = (function(){
       
       dx = e.clientX - target.xMouseDown;
       dy = e.clientY - target.yMouseDown;
+      if (target.flipX) dx = -dx;
+      if (target.flipY) dy = -dy;
       
       // TODO: Minor optimization, precompute width / zoom and height / zoom on zoom change.
-      target.xOffset = target.xOldOffset + (dx / target.width / target.zoom * 2.0);
-      target.yOffset = target.yOldOffset - (dy / target.height / target.zoom * 2.0);
+      target.xOffset = target.xOldOffset + (dx / target.width / target.zoomX * 2.0);
+      target.yOffset = target.yOldOffset - (dy / target.height / target.zoomY * 2.0);
       
       target.draw();
       
@@ -462,20 +477,25 @@ rawimage = (function(){
       if (target.drag) {
         dx = e.clientX - target.xMouseDown;
         dy = e.clientY - target.yMouseDown;
-  
-        target.xOffset = target.xOldOffset + (dx / target.width / target.zoom * 2.0);
-        target.yOffset = target.yOldOffset - (dy / target.height / target.zoom * 2.0);
+        if (target.flipX) dx = -dx;
+        if (target.flipY) dy = -dy;
+        target.xOffset = target.xOldOffset + (dx / target.width / target.zoomX * 2.0);
+        target.yOffset = target.yOldOffset - (dy / target.height / target.zoomY * 2.0);
   
         target.draw();
       }
       
       // Compute the coordinates in the image reference frame
+      var rect = target.canvas.getBoundingClientRect(); 
+      target.offsetLeft = rect.left;
+      target.offsetTop = rect.top;
       xOffset = e.clientX - target.offsetLeft;
       yOffset = e.clientY - target.offsetTop;
       
-      dx = -1 * (target.width / 2 - xOffset) / target.width / target.zoom * 2.0;
-      dy = (target.height / 2 - yOffset) / target.height / target.zoom * 2.0;
-      
+      dx = -1 * (target.width / 2 - xOffset) / target.width / target.zoomX * 2.0;
+      dy = (target.height / 2 - yOffset) / target.height / target.zoomY * 2.0;
+      if (target.flipX) dx = -dx;
+      if (target.flipY) dy = -dy;
       // TODO: Might be wiser to save (x, y) on rawimage object. This would
       //       allow uniform behavior across all user-specified callbacks.
       x = ((-1 * (target.xOffset + 0.5)) + dx) + 1.5 << 0;
@@ -498,9 +518,12 @@ rawimage = (function(){
       e.preventDefault();
       factor = e.shiftKey ? 1.01 : 1.1;
       
-      target.zoom *= (e.wheelDelta || e.deltaY) < 0 ? 1 / factor : factor;
-      target.zoom = target.zoom > target.maxZoom ? target.maxZoom : target.zoom;
-      target.zoom = target.zoom < target.minZoom ? target.minZoom : target.zoom;
+      target.zoomX *= (e.wheelDelta || e.deltaY) < 0 ? 1 / factor : factor;
+      target.zoomX = target.zoomX > target.maxZoomX ? target.maxZoomX : target.zoomX;
+      target.zoomX = target.zoomX < target.minZoomX ? target.minZoomX : target.zoomX;
+      target.zoomY *= (e.wheelDelta || e.deltaY) < 0 ? 1 / factor : factor;
+      target.zoomY = target.zoomY > target.maxZoomY ? target.maxZoomY : target.zoomY;
+      target.zoomY = target.zoomY < target.minZoomY ? target.minZoomY : target.zoomY;      
       
       target.draw();
       callbacks.onzoom();
@@ -512,11 +535,11 @@ rawimage = (function(){
   
   // Toggle a cursor over the image.
   // TODO: This check might be avoidable by redefining a cursor function
-  rawimage.prototype.setCursor = function() {
+  rawimage.prototype.setCursor = function(type) {
     this.overlay.width = this.overlay.width;
     this.crosshair = (type === 'crosshair' ? true : false);
   };
-  
+
   rawimage.prototype.drawCrosshair = function() {
     
     // Reset the width to clear the canvas
@@ -593,7 +616,10 @@ rawimage = (function(){
   rawimage.prototype.updateUniforms = function() {
     var uniforms = this.uniforms[this.program];
     this.gl.uniform2f(uniforms.uOffset, this.xOffset, this.yOffset);
-    this.gl.uniform1f(uniforms.uScale, this.zoom);
+    this.gl.uniform1f(uniforms.uScaleX, this.zoomX);
+    this.gl.uniform1f(uniforms.uScaleY, this.zoomY);
+    this.gl.uniform1f(uniforms.uFlipX, this.flipX);
+    this.gl.uniform1f(uniforms.uFlipY, this.flipY);
   };
   
   rawimage.prototype.getContext = function() {
@@ -605,9 +631,15 @@ rawimage = (function(){
     width = this.width;
     height = this.height;
     this.gl.viewport(0, 0, width, height);
-    
+
+    console.log('Available WebGL Extensions: '+this.gl.getSupportedExtensions());    
     ext = this.getExtension();
-    if (!ext) return false;
+    this.useFloat=true;
+    if (!ext) {
+	//return false;
+	this.useFloat=false;
+    }
+    //this.useFloat=false; // TEST: don't use float 
     
     vertexShader = this.loadShader(rawimage.shaders.vertex, this.gl.VERTEX_SHADER);
     if (!vertexShader) return false;
@@ -626,13 +658,16 @@ rawimage = (function(){
       // Cache uniforms since they are expensive to look up
       this.gl.useProgram(program);
       this.uniforms[key] = {};
-      ['uOffset', 'uScale', 'uExtent', 'uColorIndex', 'uColorMap', 'uTexture0'].forEach(function(u){
+      ['uOffset', 'uScaleX', 'uScaleY', 'uFlipX', 'uFlipY', 'uExtent', 'uColorIndex', 'uColorMap', 'uTexture0'].forEach(function(u){
         this.uniforms[key][u] = this.gl.getUniformLocation(program, u);
       }, this);
       
       // TODO: Offset the image so that it's centered on load
       this.gl.uniform2f(this.uniforms[key].uOffset, -width / 2, -height / 2);
-      this.gl.uniform1f(this.uniforms[key].uScale, 2 / width);
+      this.gl.uniform1f(this.uniforms[key].uScaleX, 2 / width);
+      this.gl.uniform1f(this.uniforms[key].uScaleY, 2 / height);
+      this.gl.uniform1f(this.uniforms[key].uFlipX, this.flipX);
+      this.gl.uniform1f(this.uniforms[key].uFlipY, this.flipY);
       this.gl.uniform1f(this.uniforms[key].uColorIndex, rawimage.colormaps.binary - 0.5);
       this.gl.uniform1i(this.uniforms[key].uTexture0, 1);
     }, this);
@@ -672,7 +707,10 @@ rawimage = (function(){
     
     // Store the maximum texture size
     // Does this account for floating point textures?
+    // undefined on android
     this.MAX_TEXTURE_SIZE = this.gl.getParameter(this.gl.MAX_TEXTURE_SIZE);
+    //console.log('Texture Max size: ' + this.MAX_TEXTURE_SIZE);
+    //if (!this.MAX_TEXTURE_SIZE) this.MAX_TEXTURE_SIZE  = 512;
     
     return true;
   };
@@ -696,10 +734,18 @@ rawimage = (function(){
     if (this.lookup.hasOwnProperty(id)) {
       index = this.lookup[id];
       this.gl.activeTexture(this.gl.TEXTURE0 + index);
-      if (arr.constructor !== Float32Array) {
-        arr = new Float32Array(arr);
+      if (this.useFloat)  {
+	  if (arr.constructor !== Float32Array) {
+              arr = new Float32Array(arr);
+	  }
+	  this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.LUMINANCE, width, height, 0, this.gl.LUMINANCE, this.gl.FLOAT, arr);
+      } else {
+	  if ( arr.constructor !== Uint8Array) {
+              arr = new Uint8Array(arr);
+	  }
+	  this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.LUMINANCE, width, height, 0, this.gl.LUMINANCE, this.gl.UNSIGNED_BYTE, arr);
       }
-      this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.LUMINANCE, width, height, 0, this.gl.LUMINANCE, this.gl.FLOAT, arr);
+
       return;
     }
     
@@ -718,11 +764,17 @@ rawimage = (function(){
     
     // TODO: Remove need to cast to Float32 array. Check if WebGL supports other data types now.
     //       This might be due to the use of the floating point extension. Need to look at this in depth.
-    if (arr.constructor !== Float32Array) {
-      arr = new Float32Array(arr);
+    if (this.useFloat)  {
+	if (arr.constructor !== Float32Array) {
+            arr = new Float32Array(arr);
+	}
+	this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.LUMINANCE, width, height, 0, this.gl.LUMINANCE, this.gl.FLOAT, arr);
+    } else {
+	if ( arr.constructor !== Uint8Array) {
+            arr = new Uint8Array(arr);
+	}
+	this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.LUMINANCE, width, height, 0, this.gl.LUMINANCE, this.gl.UNSIGNED_BYTE, arr);
     }
-    this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.LUMINANCE, width, height, 0, this.gl.LUMINANCE, this.gl.FLOAT, arr);
-    
     // Current image defaults to the first texture uploaded.
     this.currentImage = this.currentImage || id;
     
@@ -767,7 +819,10 @@ rawimage = (function(){
   
   rawimage.prototype.setExtent = function(min, max) {
     var name, program, uExtent;
-    
+    if (!this.useFloat) {
+	min = min / 255;
+	max = max / 255;
+    }
     for (name in this.programs) {
       if (name === 'color') continue;
       

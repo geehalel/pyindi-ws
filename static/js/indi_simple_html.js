@@ -95,6 +95,367 @@ Indi.util =  {
 
     b64decode: (window.atob ? (function(x) { return window.atob(x); }) : (function(x) { return Indi.util.base64_decode(x); })),
 
+    histogram: (function($) {
+	var histogram = function(data, width, height, min, max) {
+	    this.data = data;
+	    this.width = width;
+	    this.height = height;
+	    this.nelem = this.width * this.height;
+	    if (typeof(min) === 'undefined'|| typeof(max) === 'undefined') {
+		var minmax = findminmax();
+		this.min=minmax.min;
+		this.max=minmax.max;
+	    } else {
+		this.min=min;
+		this.max=max;
+	    }
+	};
+
+	histogram.prototype = {
+	    constructor: histogram,
+	    findminmax: function() {
+		if (typeof(this.data) === 'undefined'|| typeof(this.data[0]) === 'undefined') {
+		    alert('histogram: data array is empty or undefined');
+		    return {min: 0, max :0};
+		}
+		min = this.data[0]; max = this.data[0];
+		for (var i = 1; i < this.nelem; i++) {
+		    if (this.data[i] < min)
+			min = this.data[i];
+		    else		 
+			if (this.data[i] > max)
+			    max = this.data[i];
+		}
+		return {min: min, max :max};
+	    },
+	    constructHistogram : function (hist_width, hist_height) {
+		var pixel_range = ~~(this.max - this.min);
+		this.histArray = new Array(hist_width);
+		this.cumulativeFreq = new Array(hist_width);
+		this.average=0;
+		this.stddev = 0;
+		for (var i = 0; i < hist_width; i++) {
+		    this.histArray[i] = 0;
+		    this.cumulativeFreq[i] = 0;
+		}
+		this.binWidth=hist_width / pixel_range;
+		if (this.binWidth == 0 || typeof(this.data) === 'undefined')
+		    return;
+		for (var i = 0; i < this.nelem; i++) {
+		    var id = ~~((this.data[i] - this.min) * this.binWidth);
+		    if (id >= hist_width)
+			id = hist_width - 1;
+		    else if (id < 0)
+			id = 0;
+		    this.histArray[id] += 1;
+		    this.average += this.data[i];
+		}
+		this.average = this.average / this.nelem;
+		for (var i = 0; i < this.nelem; i++) {
+		    var l = this.data[i] - this.average;
+		    this.stddev += l * l;
+		}
+		this.stddev = Math.sqrt(this.stddev / (this.nelem - 1));
+		console.log('average: '+this.average+' stddev: '+this.stddev);
+		for (var i = 0; i < hist_width; i++) {
+		    for (var j = 0; j < i; j++)
+			this.cumulativeFreq[i] += this.histArray[j];
+		}
+		this.maxIntensity=0;
+		this.maxFrequency=this.histArray[0];
+		for (var i = 0; i < hist_width; i++) {
+		    if (this.histArray[i] > this.maxFrequency) {
+			this.maxIntensity=i;
+			this.maxFrequency=this.histArray[i];	
+		    }
+		}
+		this.median=0;
+		this.halfCumulative=this.cumulativeFreq[this.histArray.length - 1]/2;
+		for (var i = 0; i < hist_width; i++) {
+		       if (this.cumulativeFreq[i] > this.halfCumulative) {
+			   this.median = i * this.binWidth + this.min;
+			   break;
+		       }
+		}
+		this.JMIndex = this.maxIntensity / hist_width;
+	    }
+
+	};
+	
+	return histogram;
+    }(jQuery)),
+  
+    starfind: (function($) {
+	var MINIMUM_PIXEL_RANGE = 5,
+	    MINIMUM_STDVAR = 5,
+	    MINIMUM_ROWS_PER_CENTER=3,
+            JM_UPPER_LIMIT = 0.5,
+            LOW_EDGE_CUTOFF_1 = 50,
+            LOW_EDGE_CUTOFF_2 = 10,
+	    DIFFUSE_THRESHOLD = 0.15,
+	    MINIMUM_EDGE_LIMIT = 2;
+
+	var starfind = function(data, histogram) {
+	    this.data = data;
+	    this.histogram = histogram;
+	    this.starSearched = false;
+	};
+
+	starfind.prototype = {
+	    constructor: starfind,
+	    checkCollision : function(s1, s2) {
+		var dis; //distance
+
+		var diff_x=s1.x - s2.x;
+		var diff_y=s1.y - s2.y;
+
+		dis = Math.abs(Math.sqrt(diff_x*diff_x + diff_y*diff_y));
+		dis -= s1.width/2;
+		dis -= s2.width/2;
+
+		if (dis<=0) //collision
+		    return true;
+		
+		//no collision
+		return false;
+	    },
+
+	    findCentroid : function (initStdDev, minEdgeWidth) {
+		var threshold = 0;
+		var avg = 0;
+		var sum = 0;
+		var min = 0;
+		var pixelRadius = 0;
+		var pixVal = 0;
+		var  badPix = 0;
+		var minimumEdgeLimit = MINIMUM_EDGE_LIMIT;
+		var JMIndex = this.histogram.JMIndex;
+		var  badPixLimit = 0;
+		var edges = new Array();
+		if (JMIndex > DIFFUSE_THRESHOLD) {
+		    minEdgeWidth = JMIndex*35+1;
+		    minimumEdgeLimit=minEdgeWidth-1;
+		} else {
+		    minEdgeWidth =6;
+		    minimumEdgeLimit=4;
+		}
+		while (initStdDev >= 1) {
+		    minEdgeWidth--;
+		    minimumEdgeLimit--;
+		    if (minEdgeWidth < 3)
+			minEdgeWidth = 3;
+		    if (minimumEdgeLimit < 1)
+			minimumEdgeLimit=1;
+		    if (JMIndex > DIFFUSE_THRESHOLD) {
+			threshold = this.histogram.max - this.histogram.stddev* (MINIMUM_STDVAR - initStdDev +1);
+			min =this.histogram.min;
+			badPixLimit=minEdgeWidth*0.5;
+		    } else {
+			threshold = (this.histogram.max - this.histogram.min)/2.0 + this.histogram.min  + this.histogram.stddev* (MINIMUM_STDVAR - initStdDev);
+			if ((this.histogram.max - this.histogram.min)/2.0 > (this.histogram.average+this.histogram.stddev*5))
+			    threshold = this.histogram.average+this.histogram.stddev*initStdDev;
+			min = this.histogram.min;
+			badPixLimit =2;
+		    }
+		    threshold -= this.histogram.min;
+		    for (var i=0; i < this.histogram.height; i++) {
+			pixelRadius = 0;
+			for(var j=0; j < this.histogram.width; j++) {
+			    pixVal = this.data[j+(i*this.histogram.width)] - min;
+			    // If pixel value > threshold, let's get its weighted average
+			    if ( pixVal >= threshold || (sum > 0 && badPix <= badPixLimit)) {
+				if (pixVal < threshold)
+				    badPix++;
+				else
+				    badPix=0;
+				avg += j * pixVal;
+				sum += pixVal;
+				pixelRadius++;
+			    } else if (sum > 0) { // Value < threshold but avg exists
+				// We found a potential centroid edge
+				if (pixelRadius >= (minEdgeWidth - (MINIMUM_STDVAR - initStdDev))) {
+				    var center = avg/sum;
+				    if (center > 0) {
+					var i_center = Math.round(center);
+					var newEdge = {};
+					newEdge.x = center;
+					newEdge.y = i;
+					newEdge.scanned = false;
+					newEdge.val  = this.data[i_center+(i*this.histogram.width)] - min;
+					newEdge.width = pixelRadius;
+					newEdge.HFR = 0;
+					newEdge.sum = sum;
+					edges.push(newEdge);
+				    }
+				}
+				// Reset
+				badPix = 0;
+				avg=0;
+				sum=0;
+				pixelRadius=0;
+			    }
+			}
+		    }
+		    // In case of hot pixels
+		    if (edges.length == 1 && initStdDev > 1) {
+			initStdDev--;
+			continue;
+		    }
+		    if (edges.length >= minimumEdgeLimit)
+			break;
+		    edges = new Array();
+		    initStdDev--;
+		}
+		
+		var cen_count=0;
+		var cen_x=0;
+		var cen_y=0;
+		var cen_v=0;
+		var cen_w=0;
+		var width_sum=0;
+
+		// Let's sort edges, starting with widest
+		edges.sort(function(s1, s2) { return s2.width - s1.width;});
+		for (var i=0; i < edges.length; i++) {
+		    if (edges[i].scanned) 
+			continue;
+		    cen_x = edges[i].x;
+		    cen_y = edges[i].y;
+		    cen_v = edges[i].sum;
+		    cen_w = edges[i].width;
+		    var avg_x = 0;
+		    var avg_y = 0;
+		    sum = 0;
+		    cen_count=0;
+		    for (var j=0; j < edges.length;j++) {
+			if (edges[j].scanned)
+			    continue;
+			if (this.checkCollision(edges[j], edges[i])) {
+			    if (edges[j].sum >= cen_v) {
+				cen_v = edges[j].sum;
+				cen_w = edges[j].width;
+			    }
+			    edges[j].scanned = true;
+			    cen_count++;
+			    avg_x += edges[j].x * edges[j].val;
+			    avg_y += edges[j].y * edges[j].val;
+			    sum += edges[j].val;
+			    continue;
+			}
+		    }
+	            var cen_limit = (MINIMUM_ROWS_PER_CENTER - (MINIMUM_STDVAR - initStdDev));
+		    if (edges.length < LOW_EDGE_CUTOFF_1) {
+			if (edges.length < LOW_EDGE_CUTOFF_2)
+			    cen_limit = 1;
+			else
+			    cen_limit = 2;
+		    }
+	            if (cen_limit < 1)
+			continue;
+		    if (cen_count >= cen_limit) {
+			// We detected a centroid, let's init it
+			var rCenter={};
+			
+			rCenter.x = avg_x/sum;
+			rCenter.y = avg_y/sum;
+			rCenter.width = cen_w; // seems there is an error here in source
+			width_sum += rCenter.width;
+			            // Calculate Total Flux From Center, Half Flux, Full Summation
+			var TF = 0;
+			var HF = 0;
+			var FSum = 0;
+			cen_x = ~~(rCenter.x);
+			cen_y = ~~(rCenter.y);
+			if (cen_x < 0 || cen_x > this.histogram.width || cen_y < 0 || cen_y > this.histogram.height)
+			    continue;
+			// Complete sum along the radius
+			for (var k=~~(rCenter.width/2); k >= -(~~(rCenter.width/2)) ; k--)
+			    FSum += this.data[cen_x-k+(cen_y*this.histogram.width)] - min;
+			
+			// Half flux
+			HF = FSum / 2.0;
+
+			// Total flux starting from center
+			TF = this.data[cen_y * this.histogram.width + cen_x] - min;
+			
+			var pixelCounter = 1;
+			// Integrate flux along radius axis until we reach half flux
+			for (var k=1; k < ~~(rCenter.width/2); k++) {
+			    TF += this.data[cen_y * this.histogram.width + cen_x + k] - min;
+			    TF += this.data[cen_y * this.histogram.width + cen_x - k] - min;
+			    
+			    if (TF >= HF) {
+				break;
+			    }
+
+			    pixelCounter++;
+			}
+			// Calculate weighted Half Flux Radius
+			rCenter.HFR = pixelCounter * (HF / TF);
+			// Store full flux
+			rCenter.val = FSum;
+			this.starCenters.push(rCenter);
+		    }
+		}
+		console.log('findcentroid : found '+this.starCenters.length+' stars');
+	    },
+	    getHFR : function (type) {
+		// This method is less susceptible to noise
+		// Get HFR for the brightest star only, instead of averaging all stars
+		// It is more consistent.
+		// TODO: Try to test this under using a real CCD.
+		
+		if (this.starCenters.length == 0)
+		    return -1;
+
+		if (type == 'HFR_MAX') {
+		    var maxVal=0;
+		    var maxIndex=0;
+		    for (var i=0; i < this.starCenters.length ; i++) {
+			if (this.starCenters[i].val > maxVal) {
+			    maxIndex=i;
+			    maxVal = this.starCenters[i].val;
+			}
+		    }
+
+		    maxHFRStar = this.starCenters[maxIndex];
+		    return this.starCenters[maxIndex].HFR;
+		}
+
+		var FSum=0;
+		var avgHFR=0;
+		// Weighted average HFR
+		for (var i=0; i < this.starCenters.length ; i++) {
+		    avgHFR += this.starCenters[i].val * this.starCenters[i].HFR;
+		    FSum   += this.starCenters[i].val;
+		}
+
+		if (FSum != 0) {
+		    return (avgHFR / FSum);
+		} else
+		    return -1;
+	    },
+
+	    findStars : function() {
+		if (typeof(this.histogram) === 'undefined')
+		    return -1;
+		if (!this.starSearched) {
+		    this.starCenters=new Array();
+		    if (this.histogram.JMIndex < JM_UPPER_LIMIT) {
+			this.findCentroid(MINIMUM_STDVAR, MINIMUM_PIXEL_RANGE);
+			//var hfrmax=this.getHFR('HFR_MAX');
+			//var hfravg=this.getHFR('HFR_AVG');
+			//console.log('HFR MAX: '+ hfrmax+' HFR_AVG: '+hfravg);
+		    }
+		}
+		this.starSearched = true;
+		return this.starCenters.length;
+	    }
+	};
+	
+	return starfind;
+    }(jQuery)),
+
     simpletextviewer: (function($) {
 	var simpletextviewer = function(iblob) {
 	    this.iblob = iblob;
@@ -305,7 +666,7 @@ Indi.util =  {
 	    bintable: { label:'View Binary'}
 	};
 	//use square viewport for astro.js/rawimage
-	var viewDims =  { width: 512, height: 512 };
+	var viewDims =  { width: 640, height: 480 };
 	var colormaps= [
 	    'base64','Accent','Blues','BrBG','BuGn','BuPu','CMRmap','Dark2','GnBu','Greens','Greys','OrRd','Oranges','PRGn',
 	    'Paired','Pastel1','Pastel2','PiYG','PuBuGn','PuBu','PuOr','PuRd','Purples','RdBu','RdGy','RdPu','RdYlBu','RdYlGn',
@@ -321,7 +682,7 @@ Indi.util =  {
 	    this.blobblob=null;
 	    this.hdus=new Array();
 	    this.divelt=$('<div></div>',{
-		css: {width: (viewDims.width+2)+'px', height: (viewDims.height+30+2)+'px', 
+		css: {width: (viewDims.width+4)+'px', height: (viewDims.height+(2 * 28))+'px', 
 		      'overflow-x': 'auto', 'overflow-y': 'auto'}
 	    });
 	    // Controls
@@ -413,6 +774,9 @@ Indi.util =  {
 		 var viewer=opts.context;
 		 var stretchselect=opts.stretchselect;
 		 var colormapselect=opts.colormapselect;
+		 var flipXcheckbox = opts.flipXcheckbox;
+		 var flipYcheckbox = opts.flipYcheckbox;
+		 var crosshaircheckbox = opts.crosshaircheckbox;
 		 // Get dataunit, width, and height from options
 		 var dataunit = opts.dataunit;
 		 var width = dataunit.width;
@@ -427,16 +791,45 @@ Indi.util =  {
 		 var factor= Math.min(viewDims.width / width, viewDims.height / height);
 		 
 		 // Initialize a WebFITS context with a viewer of size width
-		 var raw = new rawimage(el, factor * width);
+		 var raw;
+		 if (factor < 1.0) 
+		   raw = new rawimage(el, {width: factor * width, height: factor*height});
+	         else 
+		   raw = new rawimage(el, {width: width, height: height});
 		 //var raw = new rawimage(el, 400);
 		 if (!raw)
 		     alert('Can not create rawimage(webgl absent?)');
 		 
+		 this.frame = arr;
+		 this.histogram = new Indi.util.histogram(arr, width, height, extent[0], extent[1]);
+		 if (factor < 1.0)
+		     this.histogram.constructHistogram(factor * width, 100);
+		 else
+		     this.histogram.constructHistogram(width, 100);
+		 this.starfind = new Indi.util.starfind(arr, this.histogram);
+		 this.starfind.findStars();
+		 this.hfrelt.html('<b>HFR max/avg: '+this.starfind.getHFR('HFR_MAX').toFixed(2)+'/'+this.starfind.getHFR('HFR_AVG').toFixed(2)+'</b>');
+
 		 // Enable pan and zoom controls
-		 raw.setupControls();
+		 raw.setupControls({
+		     onmousemove: function(x, y, opts, e) {
+			 // 'this' is the rawimage
+			 thisviewer=opts.context;
+			 thisviewer.xoffsetelt.html('X Offset: '+x);
+			 thisviewer.yoffsetelt.html('Y Offset: '+y);
+			 thisviewer.valueelt.html('Pixel value: '+ thisviewer.frame[(x-1)  + (y-1) * width]);
+			 //console.log(thisviewer.iblob.name +' '+x+', '+y);
+		     }
+		 }, {context: this});
 		 
 		 //raw.zoom = (factor/2) / width;
-		 raw.zoom = 2.0 / width;
+		 //raw.zoom = 2.0 / width;
+		 if (factor < 1.0) {
+		     raw.zoomX = raw.zoomX * factor;
+		     raw.zoomY = raw.zoomY * factor;
+		     raw.xOffset=-width / 2;
+		     raw.yOffset=-height / 2;
+		 }
 		 // Load array representation of image
 		 raw.loadImage(viewer.iblob.name, arr, width, height);
 		 
@@ -464,8 +857,37 @@ Indi.util =  {
 		     evt.data.raw.setColorMap(cmap);
 		 });		 
 		 
-		 raw.setCursor();
+		 flipXcheckbox.on('change', {context: this, raw: raw}, function(evt) {
+		     evt.data.raw.flipX = !(evt.data.raw.flipX);
+		     evt.data.raw.draw();
+		 });		 
+		 flipYcheckbox.on('change', {context: this, raw: raw}, function(evt) {
+		     evt.data.raw.flipY = !(evt.data.raw.flipY);
+		     evt.data.raw.draw();
+		 });
+		 crosshaircheckbox.on('change', {context: this, raw: raw}, function(evt) {
+		     evt.data.raw.crosshair = !(evt.data.raw.crosshair);
+		     if (evt.data.raw.crosshair)
+			 evt.data.raw.setCursor('crosshair');
+		     else
+			 evt.data.raw.setCursor('none');
+		 });
+		 //raw.setCursor(); does not work
 	     },
+	    loadFrames: function (arr, opts) {
+		var coeffRGB = [0.2126 , 0.7152, 0.0722]; 
+		var _this=opts.context;
+		var coeff = coeffRGB[_this.framesloaded];
+		_this.frames[_this.framesloaded] = arr;
+		for (var i= 0; i < opts.height; i++)
+		    for (var j= 0; j < opts.width; j++)
+			_this.composite[i * opts.width +j] +=  (coeff * arr[i * opts.width +j]);
+		_this.framesloaded += 1;
+		if (_this.framesloaded == opts.nframes)
+		    opts.callback.call(_this, _this.composite, opts.callbackopts);
+		    //_this.invoke(opts.callback,  _this.composite, opts.callbackopts);
+		
+	    },
 	    buildfitsimageelt: function (index, hdu) {
 		var elt = $('<div></div>',{
 		    css : {border: '1px solid'}
@@ -478,11 +900,26 @@ Indi.util =  {
 		});
 		var stretchselect = $('<select></select>');
 		var colormapselect = $('<select></select>');
-
+		var flipXcheckbox = $('<label>FlipH:<input type="checkbox" title="Flip horizontally"></input></label>',
+				     {css : {border: '1px solid', 'margin-left': '3px', 'font-size': 'smaller'}});
+		var flipYcheckbox = $('<label>FlipV:<input type="checkbox" title="Flip vertically"></input></label>',
+				     {css : {border: '1px solid', 'margin-left': '3px', 'font-size': 'smaller'}});
+		var crosshaircheckbox = $('<label>Crosshair:<input type="checkbox" title="Show crosshair"></input></label>',
+				     {css : {border: '1px solid', 'margin-left': '3px', 'font-size': 'smaller'}});
+		
+		var statselt = $('<div></div>',{
+		    //css : {display: 'inline-block'}
+		});
+		this.hfrelt = $('<span></span>', {css : {'margin-left': '5px'}});
+		this.xoffsetelt = $('<span></span>', {css : {'margin-left': '5px'}});
+		this.yoffsetelt = $('<span></span>', {css : {'margin-left': '5px'}});
+		this.valueelt = $('<span></span>', {css : {'margin-left': '5px'}});
+		
 		var dataunit=hdu.data;
 
-		controlelt.append(stretchselect, colormapselect);
-		elt.append(controlelt, visuelt);
+		statselt.append(this.hfrelt, this.xoffsetelt, this.yoffsetelt, this.valueelt);
+		controlelt.append(stretchselect, colormapselect, flipXcheckbox, flipYcheckbox, crosshaircheckbox);
+		elt.append(controlelt, visuelt, statselt);
 
 		// Set options to pass to the next callback
 		var opts = {
@@ -490,11 +927,25 @@ Indi.util =  {
 		    dataunit: dataunit,
 		    el: visuelt[0],
 		    stretchselect: stretchselect,
-		    colormapselect: colormapselect
+		    colormapselect: colormapselect,
+		    flipXcheckbox: flipXcheckbox,
+		    flipYcheckbox: flipYcheckbox,
+		    crosshaircheckbox: crosshaircheckbox
 		};
-    
-		// Get pixels representing the image and pass callback with options
-		dataunit.getFrame(0, this.createVisualization, opts);
+		if (dataunit.depth == 3) {
+		    this.composite = new Array(dataunit.width * dataunit.height);
+		    for (var i = 0; i < dataunit.width * dataunit.height; i++)
+			this.composite[i] = 0;
+		    this.frames = new Array(dataunit.depth);
+		    this.framesloaded = 0;
+		    dataunit.getFrames(0, dataunit.depth, this.loadFrames, 
+				       { context: this, width: dataunit.width, height:dataunit.height, nframes: dataunit.depth, 
+					 callback: this.createVisualization,  callbackopts: opts}
+				      );
+		} else {
+		    // Get pixels representing the image and pass callback with options
+		    dataunit.getFrame(0, this.createVisualization, opts);
+		}
 		elt.hide();
 		return elt;
 	    },
