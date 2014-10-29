@@ -1,0 +1,54 @@
+<html>
+    <head>
+      <!--<script type='application/javascript' src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>-->
+      <!--<script type='application/javascript' src='https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js'></script>-->
+      <script type='application/javascript' src='static/js/jquery-1.11.0.js'></script>
+      <!--<script type='application/javascript' src='js/FileSaver.js'></script>-->
+      <script type='application/javascript' src='static/js/indi-util.js'></script>
+      <script type='application/javascript' src='static/js/astro.js/fits.js'></script>
+      <script type='application/javascript' src='static/js/astro.js/rawimage.js'></script>
+      <script type='application/javascript' src='static/js/astroview.js'></script>
+      <script type='application/javascript'>
+	$(document).ready(
+	  function (e) {
+	    var viewer=new Astroview.astroview($('#maincontent')); 
+	    $('#fileselect').on('change', 
+	        function(ev) { 
+	           var f = this.files[0]; 
+	           var reader = new FileReader();
+	           reader.onload=function(e) { viewer.refresh(f.name, f.size, e.target.result);};
+	           //reader.readAsArrayBuffer(f);
+	           //reader.readAsText(f);
+	           reader.readAsDataURL(f);
+                })
+          }
+        );
+      </script>
+    </head>
+    <body>
+
+      <div id="main" class="main">
+	<div id="mainheader" class="mainheader">
+	  <h1>Astroview</h1>
+	  <label for="fileselect">Select a file to display:<input id="fileselect" type="file"/></label>
+	</div>
+	<div id="maincontent" class="maincontent">
+	  
+	</div>
+	<div id="mainfooter" class="mainfooter">
+	</div>
+      </div>
+      <div id="logs" class="logs">
+	<div id="logsheader" class="divheader">
+	  Logs
+	</div>
+	<div id="logscontent" class="divcontent">
+	  <textarea id='message' rows='10' style="width:100%"></textarea>
+	</div>
+	<div id="logsfilter" class="divfooter">
+	</div>
+      </div>
+
+
+    </body>
+</html>
