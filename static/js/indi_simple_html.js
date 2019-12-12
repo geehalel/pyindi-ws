@@ -1,4 +1,4 @@
-/* Namespace, class, object scheme 
+/* Namespace, class, object scheme
 var Ns = Ns || {};
 
 Ns.class = (function() {
@@ -64,9 +64,9 @@ o2=new Ns.class('o2', 'po2');
 
 // TO CHECK IN INDI
 // timestamp not handled in baseclient
-// format in blob (and other strings) not correctly initialized 
+// format in blob (and other strings) not correctly initialized
 // definition of BLOBHandling lies in indidevapi.h -> device is a dependance of baseclient
- 
+
 var Indi = Indi || {};
 
 Indi.ISState = { ISS_OFF:0, ISS_ON:1};
@@ -92,8 +92,8 @@ Indi.inumber = (function($) {
 	this.inputro=$('<input type="number" readonly="readonly">');
 	this.inputrw=$('<input type="number">');
 	if (this.min) this.inputrw.attr({ min: this.min});
-	if (this.max) this.inputrw.attr({ min: this.max});
-	if (this.step) this.inputrw.attr({ min: this.step});
+	if (this.max) this.inputrw.attr({ max: this.max});
+	if (this.step) this.inputrw.attr({ step: this.step});
 	this.setvalue(this.value);
 	this.divelt=$('<tr/>', {
 	    html : '<td title="'+this.name+'">'+(this.label?this.label:this.name)+'</td>'
@@ -116,7 +116,7 @@ Indi.inumber = (function($) {
 	    });
 	}
     };
-    
+
     inumber.prototype = {
 	constructor: inumber,
 	getvalue: function() {
@@ -134,7 +134,7 @@ Indi.inumber = (function($) {
 	    return this.inputrw.val();
 	},
 	sendnewvalue: function () {
-	    var jsonmsg={ type:"newValue", serverkey: this.property.device.server.id, devicename: this.property.device.name, 
+	    var jsonmsg={ type:"newValue", serverkey: this.property.device.server.id, devicename: this.property.device.name,
 			  name:this.property.name, proptype: this.property.type};
 	    jsonmsg.element= { name:this.name, value: this.getinput()};
 	    //alert(JSON.stringify(jsonmsg));
@@ -172,7 +172,7 @@ Indi.iswitch = (function($) {
 	    break;
 	}
 	this.input.attr({
-	    'title': this.name 
+	    'title': this.name
 	});
 	this.input.css({
 	    'margin-left': '2px',
@@ -196,10 +196,10 @@ Indi.iswitch = (function($) {
 	} else {
 	    this.input.attr({
 		'disabled': 'disabled'
-	    }); 
+	    });
 	}
     };
-    
+
     iswitch.prototype = {
 	constructor: iswitch,
 	getvalue: function() {
@@ -220,9 +220,9 @@ Indi.iswitch = (function($) {
 		};
 		break;
 	    case Indi.ISRule.ISR_NOFMANY:
-		this.input.prop({ 
+		this.input.prop({
 		    checked : (this.state == Indi.ISState.ISS_ON)
-		}); 
+		});
 		break;
 	    }
 	},
@@ -239,7 +239,7 @@ Indi.iswitch = (function($) {
 	    return this.state;
 	},
 	sendnewvalue: function () {
-	    var jsonmsg={ type:"newValue", serverkey: this.property.device.server.id, devicename: this.property.device.name, 
+	    var jsonmsg={ type:"newValue", serverkey: this.property.device.server.id, devicename: this.property.device.name,
 			  name:this.property.name, proptype: this.property.type};
 	    if (this.property.rule == Indi.ISRule.ISR_1OFMANY) {
 		if (this.value == Indi.ISState.ISS_ON) return;
@@ -297,7 +297,7 @@ Indi.itext = (function($) {
 	    });
 	}
     };
-    
+
     itext.prototype = {
 	constructor: itext,
 	getvalue: function() {
@@ -315,7 +315,7 @@ Indi.itext = (function($) {
 	    return this.inputrw.val();
 	},
 	sendnewvalue: function () {
-	    var jsonmsg={ type:"newValue", serverkey: this.property.device.server.id, devicename: this.property.device.name, 
+	    var jsonmsg={ type:"newValue", serverkey: this.property.device.server.id, devicename: this.property.device.name,
 			  name:this.property.name, proptype: this.property.type};
 	    jsonmsg.element= { name:this.name, value: this.getinput()};
 	    //alert(JSON.stringify(jsonmsg));
@@ -344,7 +344,7 @@ Indi.ilight = (function($) {
 	td.append(this.inputro);
 	this.divelt.append(td);
     };
-    
+
     ilight.prototype = {
 	constructor: ilight,
 	getvalue: function() {
@@ -378,7 +378,7 @@ Indi.ilight = (function($) {
 	    }
 	},
 	sendnewvalue: function () {
-	    //var jsonmsg={ type:"newValue", serverkey: this.property.device.server.id, devicename: this.property.device.name, 
+	    //var jsonmsg={ type:"newValue", serverkey: this.property.device.server.id, devicename: this.property.device.name,
 		//	  name:this.property.name, proptype: this.property.type};
 	    //jsonmsg.element= { name:this.name, value: this.getinput()};
 	    //alert(JSON.stringify(jsonmsg));
@@ -437,16 +437,16 @@ Indi.iblob = (function($) {
 	td=$('<td/>');
 	this.buttonSave=$('<button disabled="disabled" style="margin-left:5px;">Save</button>');
 	td.append(this.buttonSave);
-	this.divelt.append(td);	
+	this.divelt.append(td);
 	this.buttonDisplay=$('<button disabled="disabled" style="margin-left:5px;">Display</button>');
 	td.append(this.buttonDisplay);
-	this.divelt.append(td);	
+	this.divelt.append(td);
 
 	this.drawstate();
 
 	this.inputenable.on('click', {context: this }, function(evt) {
 	    var blob=evt.data.context;
-	    var jsonmsg={ type:"newBlobmode", serverkey: blob.property.device.server.id, devicename: blob.property.device.name, 
+	    var jsonmsg={ type:"newBlobmode", serverkey: blob.property.device.server.id, devicename: blob.property.device.name,
 			  name:blob.property.name, proptype: blob.property.type};
 	    blob.enabletransfer= !(blob.enabletransfer);
 	    blob.drawstate();
@@ -455,7 +455,7 @@ Indi.iblob = (function($) {
 	    //alert(JSON.stringify(jsonmsg));
 	    blob.ws.send(JSON.stringify(jsonmsg));
 	});
-	
+
 	this.buttonSave.on('click', {context: this }, function(evt) {
 	    //alert('Save '+evt.data.context.name);
 	    evt.data.context.save();
@@ -464,14 +464,14 @@ Indi.iblob = (function($) {
 	    //alert('Display '+evt.data.context.name);
 	    evt.data.context.toggleDisplay();
 	});
-	
+
 	// Display element
 	this.displayelt=$('<tr/>', {
 	    css : { display: 'none' },
 	    html : '<td title="VISUALIZER">None</td>'
 	});
 	this.displaycontentelt=$('<td/>', {
-	    attr : { colspan : 5 }, 
+	    attr : { colspan : 5 },
 	    //css : { width: '100%' },
 	    html : this.name+' contents'
 	});
@@ -479,7 +479,7 @@ Indi.iblob = (function($) {
 	this.displaycontent=null;
 
     };
-    
+
     iblob.prototype = {
 	constructor: iblob,
 	getblobmode: function () {
@@ -518,12 +518,12 @@ Indi.iblob = (function($) {
 	    this.inputbloblen.val(this.bloblen);
 	    this.inputblobsize.val(this.size);
 	    this.inputformat.val(this.format);
-	    this.inputenable.prop({ 
+	    this.inputenable.prop({
 		checked : (this.enabletransfer)
-	    }); 
+	    });
 	    if (this.enabletransfer) {
-		this.buttonSave.removeAttr('disabled'); 
-		this.buttonDisplay.removeAttr('disabled'); 
+		this.buttonSave.removeAttr('disabled');
+		this.buttonDisplay.removeAttr('disabled');
 	    } else {
 		this.buttonSave.attr('disabled', 'disabled');
 		this.buttonDisplay.attr('disabled', 'disabled');
@@ -534,7 +534,7 @@ Indi.iblob = (function($) {
 	    var blobtype=null;
 	    var blobdate=new Date();
 	    var blobfilename=this.name+'_'+blobdate.toISOString()+this.format;
-	    
+
 	    if (!this.blob || this.size == 0) {
 	    	alert('Save Blob: '+this.name+' is empty or undefined');
 		return;
@@ -564,7 +564,7 @@ Indi.iblob = (function($) {
 		return;
 	    }
 	    this.displayed = !this.displayed;
-	    if (this.displayed) { 
+	    if (this.displayed) {
 		if (!this.displaycontent) {
 		    this.buildcontent();
 		    if (this.displaycontent) {
@@ -577,14 +577,14 @@ Indi.iblob = (function($) {
 		    }
 		}
 		this.displayelt.show();
-		//if (this.displaycontent) 
+		//if (this.displaycontent)
 		//    this.displaycontent.refresh();
 		this.buttonDisplay.html('Hide');
 	    } else {
 		this.displayelt.hide();
 		this.buttonDisplay.html('Display');
 	    }
-	    
+
 	},
 	buildcontent: function() {
 	    switch (this.format) {
@@ -599,11 +599,11 @@ Indi.iblob = (function($) {
 	    case '.tiff':
 	    case '.fits':
 		this.displaycontent=new Indi.util.glviewer(this);
-		break;		
+		break;
 	    }
 	},
 	sendnewvalue: function () {
-	    //var jsonmsg={ type:"newValue", serverkey: this.property.device.server.id, devicename: this.property.device.name, 
+	    //var jsonmsg={ type:"newValue", serverkey: this.property.device.server.id, devicename: this.property.device.name,
 		//	  name:this.property.name, proptype: this.property.type};
 	    //jsonmsg.element= { name:this.name, value: this.getinput()};
 	    //alert(JSON.stringify(jsonmsg));
@@ -619,25 +619,25 @@ Indi.property = (function($) {
 
     var newpropitem = function(prop, jsondata) {
 	switch(prop.type) {
-	case Indi.INDI_TYPE.INDI_NUMBER: 
+	case Indi.INDI_TYPE.INDI_NUMBER:
 	    return new Indi.inumber(prop,  jsondata);
 	    break;
-	case Indi.INDI_TYPE.INDI_SWITCH: 
+	case Indi.INDI_TYPE.INDI_SWITCH:
 	    return new Indi.iswitch(prop,  jsondata);
 	    break;
-	case Indi.INDI_TYPE.INDI_TEXT: 
+	case Indi.INDI_TYPE.INDI_TEXT:
 	    return new Indi.itext(prop,  jsondata);
 	    break;
-	case Indi.INDI_TYPE.INDI_LIGHT: 
+	case Indi.INDI_TYPE.INDI_LIGHT:
 	    return new Indi.ilight(prop,  jsondata);
 	    break;
-	case Indi.INDI_TYPE.INDI_BLOB: 
+	case Indi.INDI_TYPE.INDI_BLOB:
 	    return new Indi.iblob(prop,  jsondata);
 	    break;
-	case Indi.INDI_TYPE.INDI_UNKNOWN: 
+	case Indi.INDI_TYPE.INDI_UNKNOWN:
 	    return null;
 	    break;
-	default: 
+	default:
 	    return null;
 	    break;
 	}
@@ -652,9 +652,9 @@ Indi.property = (function($) {
 	this.groupname=jsondata.groupname;
 	this.permission=jsondata.permission;
 	this.state=jsondata.state;
-	if (this.type == Indi.INDI_TYPE.INDI_SWITCH) 
+	if (this.type == Indi.INDI_TYPE.INDI_SWITCH)
 	    this.rule=Indi.ISRule.ISR_1OFMANY;
-	if (this.type == Indi.INDI_TYPE.INDI_SWITCH && jsondata.rule) 
+	if (this.type == Indi.INDI_TYPE.INDI_SWITCH && jsondata.rule)
 	    this.rule=jsondata.rule;
 	this.vector = { };
 	this.ws=this.device.server.ws;
@@ -793,8 +793,8 @@ Indi.device = (function($) {
 	this.grouplist = [ ];
 	this.server.getdivelt().append(this.divelt);
     }
-    
-    device.prototype = { 
+
+    device.prototype = {
 	constructor : device,
 	newProperty : function (jsondata) {
 	    var groupname = jsondata.groupname;
@@ -859,7 +859,7 @@ Indi.server = (function($) {
 	this.listelt.append(this.connectelt);
     };
 
-    server.prototype = { 
+    server.prototype = {
 	constructor : server,
 	connect : function (status) {
 	    var msgdata = {server : this.host, port: this.port};
@@ -880,8 +880,8 @@ Indi.server = (function($) {
 		this.connectelt.html('Disconnect');
 		this.connectelt.removeAttr('disabled');
 		//connectelt.click = function (evt) { connect(false); };
-		this.connectelt.on('click', {context: this }, function (evt) { 
-		    evt.data.context.connect(false); 
+		this.connectelt.on('click', {context: this }, function (evt) {
+		    evt.data.context.connect(false);
 		});
 		this.anchorelt.css('background-color', '');
 		this.divelt=$('<div/>', {
@@ -893,9 +893,9 @@ Indi.server = (function($) {
 	    } else {
 		this.connectelt.html('Connect');
 		this.connectelt.removeAttr('disabled');
-		this.connectelt.on('click', {context: this }, function (evt) { 
-		    evt.data.context.connect(true); 
-		});	
+		this.connectelt.on('click', {context: this }, function (evt) {
+		    evt.data.context.connect(true);
+		});
 		this.anchorelt.css('background-color', '#AEAEAE');
 		this.anchorelt.attr('href', 'javascript:void(0);');
 		this.divelt.remove();
@@ -916,13 +916,13 @@ Indi.server = (function($) {
 	    return this.divelt;
 	}
     };
-    
+
     return server;
 }(jQuery)) ;
 
 
 Indi.manager=(function($) {
-    
+
     var manager = function(ews, before) {
 	this.serverlist = [ ];
 	this.beforeelt=before;
@@ -935,15 +935,15 @@ Indi.manager=(function($) {
 	    },
 	    context: this.beforeelt
 	});
-	before.parent().on('click', '#connect', {context: this}, function(evt) { 
+	before.parent().on('click', '#connect', {context: this}, function(evt) {
 	    var server = $('#server').val();
 	    var port =  $('#port').val();
 	    console.log("Connect server "+ server +':'+ port + '\n');
 	    var serverkey = evt.data.context.createserver(server, port);
-	    $('#message').val($('#message').val() + 'Connecting ' +serverkey+ '\n'); 
-	    
+	    $('#message').val($('#message').val() + 'Connecting ' +serverkey+ '\n');
+
 	    //return false;
-	}); 
+	});
     };
 
     manager.prototype = {
@@ -1025,7 +1025,7 @@ Indi.manager=(function($) {
 		} else {
 		    result = 'MANAGER: unknown server ' + jsonmsg.serverkey;
 		}
-	    } 
+	    }
 	    return result;
 	}
     };
