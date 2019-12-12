@@ -37,8 +37,8 @@ class IndiJSONEncoder(json.JSONEncoder):
         if isinstance(obj, PyIndi.BaseDevice):
             return {'name':  PyIndi.BaseDevice.getDeviceName }
         if isinstance(obj, PyIndi.Property):
-            return {'name' : PyIndi.Property.getName,
-                    'label': PyIndi.Property.getLabel,
+            return {'name' : PyIndi.Property.getName, 
+                    'label': PyIndi.Property.getLabel, 
                     'groupname' : PyIndi.Property.getGroupName,
                     'devicename' : PyIndi.Property.getDeviceName,
                     'state' : PyIndi.Property.getState,
@@ -51,7 +51,7 @@ class IndiJSONEncoder(json.JSONEncoder):
             isinstance(obj, PyIndi.IBLOBVectorProperty)):
            return {'device' : None,
                    'name' : None,
-                   'label' : None,
+                   'label' : None, 
                    'group' : None,
                    's' : None
                    #'timestamp' : None # Not set by basedevice.setValue on message receive
@@ -59,7 +59,7 @@ class IndiJSONEncoder(json.JSONEncoder):
         if isinstance(obj, PyIndi.ISwitchVectorProperty):
            return {'device' : None,
                    'name' : None,
-                   'label' : None,
+                   'label' : None, 
                    'group' : None,
                    's' : None,
                    'r' : None
@@ -67,17 +67,17 @@ class IndiJSONEncoder(json.JSONEncoder):
                    }
         if isinstance(obj, PyIndi.IText):
            return {'name' : None,
-                   'label': None,
-                   'text': None
+                   'label': None, 
+                   'text': None 
                    }
         if isinstance(obj, PyIndi.INumber):
            return {'name' : None,
                    'label' : None,
-                   'format': None,
-                   'min': None,
-                   'max': None,
-                   'step': None,
-                   'value': None
+                   'format': None, 
+                   'min': None, 
+                   'max': None, 
+                   'step': None, 
+                   'value': None 
                    }
         if isinstance(obj, PyIndi.ISwitch):
            return {'name' : None,
@@ -92,24 +92,24 @@ class IndiJSONEncoder(json.JSONEncoder):
         if isinstance(obj, PyIndi.IBLOB):
            return {'name' : None,
                    'label' : None,
-                   'format': None,
-                   'size': None,
+                   'format': None, 
+                   'size': None, 
                    'bloblen': None,
-                   'blob': (lambda x: base64.b64encode(x.getblobdata()).decode(encoding='ascii'))
+                   'blob': (lambda x: base64.b64encode(x.getblobdata()))
                    #'blob': str(obj.blob) if hasattr(obj, 'blob') else ''
                    }
         return None
     def getvectormethod(self, obj):
         if isinstance(obj, PyIndi.Property):
-            if (obj.getType() == PyIndi.INDI_TEXT):
+            if (obj.getType() == PyIndi.INDI_TEXT): 
                 return PyIndi.Property.getText
-            if (obj.getType() == PyIndi.INDI_NUMBER):
+            if (obj.getType() == PyIndi.INDI_NUMBER): 
                 return PyIndi.Property.getNumber
-            if (obj.getType() == PyIndi.INDI_SWITCH):
-                return PyIndi.Property.getSwitch
-            if (obj.getType() == PyIndi.INDI_LIGHT):
+            if (obj.getType() == PyIndi.INDI_SWITCH): 
+                return PyIndi.Property.getSwitch 
+            if (obj.getType() == PyIndi.INDI_LIGHT): 
                 return PyIndi.Property.getLight
-            if (obj.getType() == PyIndi.INDI_BLOB):
+            if (obj.getType() == PyIndi.INDI_BLOB): 
                 return PyIndi.Property.getBLOB
         if (isinstance(obj, PyIndi.INumberVectorProperty) or
             isinstance(obj, PyIndi.ITextVectorProperty) or
@@ -122,24 +122,21 @@ class IndiJSONEncoder(json.JSONEncoder):
         encoder=self.getencoder(obj)
         if encoder:
             jsonobj={ }
-            for (key, getmethod) in encoder.items():
+            for (key, getmethod) in encoder.iteritems():
                 if getmethod:
                     jsonobj[key] = getmethod(obj)
                 else:
                     if (hasattr(obj, key)):
                         element = getattr(obj, key)
-                        # unuseful in Python3
-                        # if (isinstance(element, str)):
-                        #     try:
-                        #         # indi does not init correctly some strings
-                        #         jsonobj[key] = element.decode('utf_8')
-                        #     except:
-                        #         jsonobj[key] = ''
-                        # else:
-                        #     jsonobj[key] = element
-                        if (isinstance(element, bytes)):
-                            element = element.decode(encoding='ascii')
-                        jsonobj[key] = element
+                        if (isinstance(element, str)):
+                            try:
+                                # indi does not init correctly some strings
+                                jsonobj[key] = element.decode('utf_8')
+                            except:
+                                jsonobj[key] = ''
+                        else:
+                            jsonobj[key] = element
+
             if (isinstance(obj, PyIndi.Property) and (obj.getType()==PyIndi.INDI_SWITCH)):
                 jsonobj['rule'] = obj.getSwitch().r
             if (isinstance(obj, PyIndi.Property) or
@@ -176,22 +173,21 @@ class WSIndiClient(PyIndi.BaseClient):
     def newBLOB(self, bp):
         self.ws.send('{"type":"newBlob", "serverkey":"'+str(self.serverkey)+'", "data": { "device": "'+ str(bp.bvp.device) +'", '+'"name": "'+ str(bp.bvp.name) +'", '+
                      '"s": '+ str(bp.bvp.s) +', '+'"vector": ['+ json.dumps(bp, cls=IndiJSONEncoder)+']}}')
-        #self.ws.send("new BLOB "+ bp.name)
+        #self.ws.send("new BLOB "+ bp.name.decode())
     def newSwitch(self, svp):
         self.ws.send('{"type":"newSwitch", "serverkey":"'+str(self.serverkey)+'", "data":'+ json.dumps(svp, cls=IndiJSONEncoder)+'}')
-        #self.ws.send ("new Switch "+ svp.name + " for device "+ svp.device)
+        #self.ws.send ("new Switch "+ svp.name.decode() + " for device "+ svp.device.decode())
     def newNumber(self, nvp):
         self.ws.send('{"type":"newNumber", "serverkey":"'+str(self.serverkey)+'", "data":'+ json.dumps(nvp, cls=IndiJSONEncoder)+'}')
-        #self.ws.send("new Number "+ nvp.name + " for device "+ nvp.device)
+        #self.ws.send("new Number "+ nvp.name.decode() + " for device "+ nvp.device.decode())
     def newText(self, tvp):
         self.ws.send('{"type":"newText", "serverkey":"'+str(self.serverkey)+'", "data":'+ json.dumps(tvp, cls=IndiJSONEncoder)+'}')
-        #self.ws.send("new Text "+ tvp.name + " for device "+ tvp.device)
+        #self.ws.send("new Text "+ tvp.name.decode() + " for device "+ tvp.device.decode())
     def newLight(self, lvp):
         self.ws.send('{"type":"newLight", "serverkey":"'+str(self.serverkey)+'", "data":'+ json.dumps(lvp, cls=IndiJSONEncoder)+'}')
-        #self.ws.send("new Light "+ lvp.name + " for device "+ lvp.device)
+        #self.ws.send("new Light "+ lvp.name.decode() + " for device "+ lvp.device.decode())
     def newMessage(self, d, m):
-        #self.ws.send("new Message "+ d.messageQueue(m))
-        self.ws.send("new Message "+ d.messageQueue(m))
+        self.ws.send("new Message "+ d.messageQueue(m).decode())
     def serverConnected(self):
         self.serverkey=self.getHost()+":"+str(self.getPort())
         self.ws.setConnected(self.serverkey, True)
@@ -211,14 +207,14 @@ class IndiWebSocketHandler(WebSocket):
         super(IndiWebSocketHandler, self).__init__(sock, protocols, extensions, environ, heartbeat_freq)
         self.jsonmsg=  { }
         self.indiservers = { }
-
+    
     def setConnected(self, serverkey, connected):
         if serverkey in self.indiservers:
             self.indiservers[serverkey].connected=connected
             self.send("indi-ws: setConnected "+str(connected)+ " "+ serverkey)
             self.send('{"type": "setConnected", "serverkey":"'+str(serverkey)+'", "connected":'+json.dumps(connected)+'}')
         else:
-            self.send("indi-ws: not there " + serverkey )
+            self.send("indi-ws: not there " + serverkey ) 
 
     def received_message(self, m):
         #print(m)
@@ -278,12 +274,12 @@ class IndiWebSocketHandler(WebSocket):
                 try:
                     if (self.jsonmsg['proptype'] == PyIndi.INDI_TEXT):
                         indiclient.sendNewText(dname, pname, itemname, value)
-                    if (self.jsonmsg['proptype'] == PyIndi.INDI_NUMBER):
+                    if (self.jsonmsg['proptype'] == PyIndi.INDI_NUMBER): 
                         indiclient.sendNewNumber(dname, pname, itemname, float(value))
-                    if (self.jsonmsg['proptype'] == PyIndi.INDI_SWITCH):
+                    if (self.jsonmsg['proptype'] == PyIndi.INDI_SWITCH): 
                         # we can not set to 0 a checkbox property with this method!
                         indiclient.sendNewSwitch(dname, pname, itemname) # no value, defult is to set switch on
-                    if (self.jsonmsg['proptype'] == PyIndi.INDI_BLOB):
+                    if (self.jsonmsg['proptype'] == PyIndi.INDI_BLOB): 
                         indiclient.sendOneBlob(dname, pname, itemname, value)
                 except Exception as e:
                     self.send('indi-ws: Exception '+type(e).__name__ + ':'+str(e))
@@ -305,17 +301,17 @@ class IndiWebSocketHandler(WebSocket):
                     attr='text'
                     sendmethod=PyIndi.BaseClient.sendNewText
                     convmethod=str
-                if (self.jsonmsg['proptype'] == PyIndi.INDI_NUMBER):
+                if (self.jsonmsg['proptype'] == PyIndi.INDI_NUMBER): 
                     vprop=prop.getNumber()
                     attr='value'
                     sendmethod=PyIndi.BaseClient.sendNewNumber
                     convmethod=(lambda x: float(str(x)))
-                if (self.jsonmsg['proptype'] == PyIndi.INDI_SWITCH):
+                if (self.jsonmsg['proptype'] == PyIndi.INDI_SWITCH): 
                     vprop=prop.getSwitch()
                     attr='s'
                     sendmethod=PyIndi.BaseClient.sendNewSwitch
                     convmethod=(lambda x: int(str(x)))
-                #if (self.jsonmsg['proptype'] == PyIndi.INDI_BLOB):
+                #if (self.jsonmsg['proptype'] == PyIndi.INDI_BLOB): 
                 #    vprop=prop.getBLOB()
                 #    attr=None
                 #    sendmethod=PyIndi.BaseClient.sendOneBlob
@@ -332,7 +328,7 @@ class IndiWebSocketHandler(WebSocket):
                         return
                     setattr(element, attr, value)
                 sendmethod(indiclient, vprop)
-                return
+                return       
             if (self.jsonmsg['type'] == "newBlobmode"):
                 serverkey=self.jsonmsg['serverkey']
                 if not(serverkey in self.indiservers):
@@ -351,7 +347,7 @@ class IndiWebSocketHandler(WebSocket):
                     else:
                         mode=int(str(self.jsonmsg['mode']))
                     indiclient.setBLOBMode(mode, dname, pname);
-                else:
+                else: 
                     # device level blob handling
                     mode=int(str(self.jsonmsg['mode']))
                     indiclient.setBLOBMode(mode, dname);
