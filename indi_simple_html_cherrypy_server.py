@@ -365,14 +365,15 @@ class IndiWebSocketHandler(WebSocket):
         #self.send(TextMessage(reason))
 
 class Root(object):
-    def __init__(self, host, port, ssl=False):
+    def __init__(self, host, port, ssl=False, indexfile='static/index_simple_html.html'):
         self.host = host
         self.port = port
         self.scheme = 'wss' if ssl else 'ws'
+        self.indexfile = indexfile
 
     @cherrypy.expose
     def index(self):
-        f=open('static/index_simple_html.html')
+        f=open(self.indexfile)
         return f.read().format(host=self.host, port=self.port, scheme=self.scheme)
 
     @cherrypy.expose
@@ -388,6 +389,7 @@ if __name__ == '__main__':
     parser.add_argument('--host', default='127.0.0.1')
     parser.add_argument('-p', '--port', default=9000, type=int)
     parser.add_argument('--ssl', action='store_true')
+    parser.add_argument('-s', '--simple', action='store_true')
     args = parser.parse_args()
 
     cherrypy.config.update({'server.socket_host': args.host,
@@ -398,10 +400,14 @@ if __name__ == '__main__':
         cherrypy.config.update({'server.ssl_certificate': './server.crt',
                                 'server.ssl_private_key': './server.key'})
 
+    indexfile = 'static/index_bootstrap.html'
+    if args.simple:
+        indexfile = 'static/index_simple_html.html'
+
     WebSocketPlugin(cherrypy.engine).subscribe()
     cherrypy.tools.websocket = WebSocketTool()
 
-    cherrypy.quickstart(Root(args.host, args.port, args.ssl), '', config={
+    cherrypy.quickstart(Root(args.host, args.port, args.ssl, indexfile), '', config={
         '/ws': {
             'tools.websocket.on': True,
             'tools.websocket.handler_cls': IndiWebSocketHandler
