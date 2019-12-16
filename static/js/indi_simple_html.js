@@ -242,7 +242,7 @@ Indi.iswitch = (function($) {
 	    var jsonmsg={ type:"newValue", serverkey: this.property.device.server.id, devicename: this.property.device.name,
 			  name:this.property.name, proptype: this.property.type};
 	    if (this.property.rule == Indi.ISRule.ISR_1OFMANY) {
-		if (this.value == Indi.ISState.ISS_ON) return;
+		if (this.state == Indi.ISState.ISS_ON) return;
 		this.property.resetswitch();
 		this.state=Indi.ISState.ISS_ON;
 		this.property.sendnewvector();
@@ -568,7 +568,7 @@ Indi.iblob = (function($) {
 		if (!this.displaycontent) {
 		    this.buildcontent();
 		    if (this.displaycontent) {
-			this.displaycontent.reload();
+			this.displaycontent.reload(this.format.substring(1), this.blob);
 			//this.displaycontent.refresh();
 			this.displaycontentelt.empty();
 			this.displaycontentelt.append(this.displaycontent.getdivelt());

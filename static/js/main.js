@@ -3,7 +3,7 @@ function startws(scheme, host, port) {
 
     websocket = scheme+'://'+host+':'+port+'/ws';
     if (window.WebSocket) {
-	ws = new WebSocket(websocket);
+	    ws = new WebSocket(websocket);
     } else if (window.MozWebSocket) {
 	ws = MozWebSocket(websocket);
     } else {
@@ -21,15 +21,16 @@ function startws(scheme, host, port) {
 	e.preventDefault();
     };
 
-    ws.onmessage = function (evt) {
+  ws.onmessage = function (evt) {
 	var result=null;
-	try {
-	    var obj=$.parseJSON(evt.data);
-	    if (obj.type) {
-		result = indimanager.processmessage(obj);
-	    } else {
-		result = 'Unknown json format: '+ JSON.stringify(obj);
-	    }
+  //console.log(evt);
+	try { // should avoid to try to parse indi-ws or other simple messages
+    var obj=$.parseJSON(evt.data);
+    if (obj.type) {
+      result = indimanager.processmessage(obj);
+    } else {
+		      result = 'Unknown json format: '+ JSON.stringify(obj);
+	  }
 	} catch (e) {
 	    result =  "MESSAGE: " + evt.data ;
 	}

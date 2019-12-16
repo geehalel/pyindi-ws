@@ -7,90 +7,139 @@
 
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
-
+    <!-- Pyindi Web server -->
+    <link rel="stylesheet" href="/css/pyindi-ws.css">
     <title>PyIndi WebServer</title>
   </head>
-  <body>
-    <!-- Inserver Modal -->
-    <div class="modal fade" id="indiServerModalCenter" tabindex="-1" role="dialog" aria-labelledby="indiServerModalCenterTitle" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="indiServerModalCenterTitle">Indi servers</h5>
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
-          </div>
-          <div class="modal-body">
-            <!--<table id="serverlist" class="table table-sm table-hover table-condensed">
-              <thead><tr><th class="col-sm-5">Server</th><th class="col-sm-3">Port</th><th class="col-sm-2"></th><th class="col-sm-2"></th></tr></thead>
-              <tbody>
-                <tr><td colspan="2">No server connected</td>
-                  <td><button type="button" class="btn btn-primary btn-sm" disabled>Connect</button></td>
-                  <td><button type="button" class="btn btn-secondary btn-sm" disabled>Dismiss</button></td></tr>
-              </tbody>
-            </table>
-            -->
-            <ul class="list-group list-group-flush" id="serverlist">
-              <li class="list-group-item">
-                <div class="input-group">
-                  <span class="input-group-text">No server connected</span>
-                  <div class="input-group-append">
-                    <button type="button" class="btn btn-primary btn-sm" disabled>Connect</button>
-                    <button type="button" class="btn btn-secondary btn-sm" disabled>Dismiss</button>
-                  </div>
-            	  </div>
-              </li>
-              <li class="list-group-item">
-                <div class="input-group">
-                  <span class="input-group-text">localhost</span>
-                  <span class="input-group-text">:</span>
-            	    <span class="input-group-text">7624</span>
-                  <div class="input-group-append">
-                    <button type="button" class="btn btn-primary btn-sm">Connect</button>
-                    <button type="button" class="btn btn-secondary btn-sm">Dismiss</button>
-                  </div>
-            	  </div>
-              </li>
-            </ul>
-            <datalist id='knownindiservers'>
-      	       <option>localhost</option>
-      	       <option>127.0.0.1</option>
-      	       <option>192.168.0.1</option>
-            </datalist>
-            <datalist id='knownindiports'>
-      	       <option>7624</option>
-            </datalist>
-            <div class="input-group">
-              <input type='text' id='server' size='15' list='knownindiservers' class="form-control" aria-label="Server" placeholder="Server address"/>
-              <span class="input-group-text">:</span>
-        	    <input type='number' id='port' max='65535' size='5' list='knownindiports' class="form-control" aria-label="Port" placeholder="Server port"/>
-              <div class="input-group-append">
-                <button type="button" class="btn btn-primary btn-sm">Add</button>
-              </div>
-        	  </div>
-          </div>
-          <div class="modal-footer justify-content-between">
-            <div class="form-check mr-auto">
-              <label class="form-check-label">
-                <input type="checkbox" class="form-check-input" value=""/>Use cookies to store your servers
-              </label>
+  <body class="text-center">
+    <div class="container d-flex w-100 h-100 p-3 mx-auto flex-column">
+
+      <!-- Indi server Modal -->
+      <div class="modal fade" id="indiServerModalCenter" tabindex="-1" role="dialog" aria-labelledby="indiServerModalCenterTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="indiServerModalCenterTitle">Indi servers</h5>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
             </div>
-            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            <div class="modal-body">
+              <ul class="list-group list-group-flush" id="serverlist">
+                <li class="list-group-item" id="no-server-connected">
+                  <div class="input-group">
+                    <span class="input-group-text w-100">No server connected</span>
+            	     </div>
+                </li>
+                <li class="list-group-item">
+                  <div class="input-group">
+                    <input type='text' size='15' class="form-control" aria-label="localhost" readonly value="localhost"/>
+                    <span class="input-group-text">:</span>
+            	      <input type='number'  size='5' class="form-control" aria-label="7624" readonly value="7624"/>
+                    <div class="input-group-append">
+                      <button type="button" class="btn btn-primary btn-sm">Connect</button>
+                      <button type="button" class="btn btn-secondary btn-sm">Dismiss</button>
+                    </div>
+            	     </div>
+                </li>
+                <li class="list-group-item">
+                  <div class="input-group">
+                    <input type='text' size='15' class="form-control" aria-label="192.168.0.1" readonly value="192.168.0.1"/>
+                    <span class="input-group-text">:</span>
+            	      <input type='number'  size='5' class="form-control" aria-label="7624" readonly value="7624"/>
+                    <div class="input-group-append">
+                      <button type="button" class="btn btn-primary btn-sm">Disconnect</button>
+                      <button type="button" class="btn btn-secondary btn-sm">Dismiss</button>
+                    </div>
+            	    </div>
+                </li>
+              </ul>
+              <datalist id='knownindiservers'>
+      	        <option>localhost</option>
+      	        <option>127.0.0.1</option>
+      	        <option>192.168.0.1</option>
+              </datalist>
+              <datalist id='knownindiports'>
+      	        <option>7624</option>
+              </datalist>
+              <div class="input-group">
+                <input type='text' id='server' size='15' list='knownindiservers' class="form-control" aria-label="Server" placeholder="Server address"/>
+                <span class="input-group-text">:</span>
+        	      <input type='number' id='port' max='65535' size='5' list='knownindiports' class="form-control" aria-label="Port" placeholder="Server port"/>
+                <div class="input-group-append">
+                  <button type="button" class="btn btn-primary btn-sm">Add</button>
+                </div>
+        	    </div>
+            </div>
+            <div class="modal-footer justify-content-between">
+              <div class="form-check mr-auto">
+                <label class="form-check-label">
+                  <input type="checkbox" class="form-check-input" value="" disabled/>Use cookies to store your servers
+                </label>
+              </div>
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-    <nav class="navbar" id="navbar-main">
-      <form class="form-inline">
-        <span class="d-inline-block" tabindex="0" data-toggle="tooltip" data-placement="bottom" title="Add an Indi server">
-          <button class="btn btn-outline-primary" type="button" data-toggle="modal" data-target="#indiServerModalCenter"><b>+</b></button>
-        </span>
-        <button class="btn btn-outline-primary" type="button" data-toggle="tooltip" data-placement="bottom" title="Select server" disabled>Server</button>
-        <button class="btn btn-outline-primary" type="button" data-toggle="tooltip" data-placement="bottom" title="Select Device" disabled>Device</button>
-        <button class="btn btn-outline-primary" type="button" data-toggle="tooltip" data-placement="bottom" title="Select Group" disabled>Group</button>
-    </form>
-    </nav>
+      <!-- Indi logs Modal -->
+      <div class="modal fade" id="indiLogsModalCenter" tabindex="-1" role="dialog" aria-labelledby="indiLogsModalCenterTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="indiServerLogs">Indi logs</h5>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body">
+              <textarea id='message' rows='10'></textarea>
+            </div>
+            <div class="modal-footer justify-content-between">
+              <div class="form-select mr-auto">
+                  <input type="select" class="form-select-input" placeholder="Filter" disabled/>
+              </div>
+              <button type="button" class="btn btn-primary">Save logs</button>
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <header class="mb-auto">
+        <div class="inner">
+          <nav class="nav-bar" id="navbar-main">
+            <form class="form-inline">
+              <span class="d-inline-block" tabindex="0" data-toggle="tooltip" data-placement="bottom" title="Add an Indi server">
+                <button class="nav-btn btn-outline-primary" type="button" data-toggle="modal" data-target="#indiServerModalCenter"><b>+</b></button>
+              </span>
+              <button class="nav-btn btn-outline-primary" type="button" data-toggle="tooltip" data-placement="bottom" title="Select server" disabled>Device</button>
+              <button class="nav-btn btn-outline-primary" type="button" data-toggle="tooltip" data-placement="bottom" title="Select Device" disabled>Group</button>
+              <button class="nav-btn btn-outline-primary" type="button" data-toggle="tooltip" data-placement="bottom" title="Select Group" disabled>Property</button>
+            </form>
+          </nav>
+        </div>
+      </header>
+      <main role="main" class="inner">
+        <h1 class="heading">Python Indi Web Server</h1>
+        <!--<p class="lead"><code>pyindi-ws</code> on <code id="wsserver"></code></p>-->
+        <p class="lead warning" id="websocket-status">Websocket not started</p>
+        <p class="lead">Connect to an Indi server using the '+' button in the nav-bar.
+        Or just use the 'Start here' button.</p>
+        <p class="lead">
+          <a href="#" class="btn btn-lg btn-primary" data-toggle="modal" data-target="#indiServerModalCenter">Start here</a>
+        </p>
+      </main>
+
+      <footer>
+        <form class="form-inline justify-content-between">
+          <div class="mr-auto">
+            <span>No server connected</span>
+          </div>
+          <button class="nav-btn btn-outline-primary" type="button" data-toggle="modal" data-target="#indiLogsModalCenter">Logs</button>
+      </form>
+      </footer>
+    </div> <!-- container -->
     <!-- Optional JavaScript -->
     <!-- jQuery first, then Popper.js, then Bootstrap JS -->
     <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>

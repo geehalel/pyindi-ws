@@ -8,6 +8,8 @@ function startws(scheme, host, port) {
 	ws = MozWebSocket(websocket);
     } else {
 	console.log('WebSocket Not Supported');
+  $('#message').val($('#message').val() + 'WebSocket Not Supported\n');
+  $('#websocket-status').append('<button class="btn">Retry</button>')
 	return;
     }
     indielt=$('#logs');
