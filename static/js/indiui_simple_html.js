@@ -527,3 +527,51 @@ IndiUI.ui_server = (function($) {
   };
   return ui_server;
 }(jQuery));
+
+IndiUI.ui_manager=(function($) {
+  var ui_manager = function(manager, container, collapsible=true) {
+    this.manager=manager;
+    this.container=container;
+    $.ajax({
+      url: '/html/indi_simple_html.html',
+      success: function(data) {
+        //$(this.container).append('<div id="indi">\n' + data+'</div>\n');
+        $(this.container).append('<button type="button" class="collapsible" id="indimanager">Indi Manager</button>');
+        $(this.container).append('<div id="indi" class=collapsiblecontent>\n' + data+'</div>\n');
+        $("#indimanager").on('click', function() {
+          this.classList.toggle("active");
+          var content = this.nextElementSibling;
+          if (content.style.display === "block") {
+            content.style.display = "none";
+          } else {
+            content.style.display = "block";
+          }
+        });
+        $('#connect').on('click', {context: this.manager}, function(evt) {
+          var server = $('#server').val();
+          var port =  $('#port').val();
+          console.log("Connect server "+ server +':'+ port + '\n');
+          var serverkey = evt.data.context.createserver(server, port);
+          $('#message').val($('#message').val() + 'Connecting ' +serverkey+ '\n');
+          //return false;
+        });
+      },
+      context: this
+    });
+  };
+  ui_manager.prototype = {
+    constructor : ui_manager,
+    addserver: function(indiserver) {
+      var serverlistelt=$('#serverlist');
+      serverlistelt.append(indiserver.ui_element.get_display());
+      if (serverlistelt.is(':hidden')) {
+        $('#noservertext').hide();
+        serverlistelt.show();
+	    }
+    },
+    setconnected: function(indiserver) {
+      $(this.container).append(indiserver.ui_element.get_root());
+    },
+  };
+  return ui_manager;
+}(jQuery));

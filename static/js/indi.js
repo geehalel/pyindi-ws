@@ -390,12 +390,13 @@ Indi.device = (function($) {
 }(jQuery)) ;
 
 Indi.server = (function($) {
-  var server = function(ehost, eport, websocket) {
+  var server = function(ehost, eport, manager) {
     this.host=ehost;
     this.port=eport;
     this.id= this.host+':'+this.port;
     this.connected=false;
-    this.ws=websocket;
+    this.manager=manager;
+    this.ws=this.manager.ws;
     this.devicelist = [ ];
     this.ui_element = new IndiUI.ui_server(this);
   };
@@ -416,7 +417,6 @@ Indi.server = (function($) {
 	    this.connected=isconnected;
       this.ui_element.setconnected(isconnected);
 	    console.log('SERVER '+this.host+':'+this.port+' : setConnected = '+isconnected);
-	    if (isconnected) $('#indi').append(this.ui_element.get_root());
     },
     newDevice : function(jsondata) {
       var newdevice = new Indi.device(this, jsondata);
@@ -430,48 +430,28 @@ Indi.server = (function($) {
   return server;
 }(jQuery)) ;
 
-
 Indi.manager=(function($) {
-  var manager = function(ews, before) {
+  var manager = function(ews, container) {
     this.serverlist = [ ];
-    this.beforeelt=before;
+    this.container= container;
     this.ws=ews;
     this.key = null;
-    $.ajax({
-	    url: '/html/indi_simple_html.html',
-	    success: function(data) {
-        this.before('<div id="indi">\n' + data+'</div>\n');
-      },
-      context: this.beforeelt
-    });
-    before.parent().on('click', '#connect', {context: this}, function(evt) {
-	    var server = $('#server').val();
-	    var port =  $('#port').val();
-	    console.log("Connect server "+ server +':'+ port + '\n');
-	    var serverkey = evt.data.context.createserver(server, port);
-	    $('#message').val($('#message').val() + 'Connecting ' +serverkey+ '\n');
-	    //return false;
-    });
+    this.ui_element = new IndiUI.ui_manager(this, container);
   };
   manager.prototype = {
     constructor : manager,
     createserver : function(host, port) {
 	    var indiserver = null;
 	    var serverkey=host+':'+port;
-	    var serverlistelt=$('#serverlist');
 	    if (!(serverkey in this.serverlist)) {
-        indiserver = new Indi.server(host, port, this.ws);
+        indiserver = new Indi.server(host, port, this);
         this.serverlist[serverkey] = indiserver;
-        serverlistelt.append(indiserver.ui_element.get_display());
+        this.ui_element.addserver(indiserver);
       } else {
         indiserver = this.serverlist[serverkey];
 	    }
 	    if (!(indiserver.isConnected())) {
         indiserver.connect(true);
-	    }
-	    if (serverlistelt.is(':hidden')) {
-        $('#noservertext').hide();
-        serverlistelt.show();
 	    }
 	    return serverkey;
     },
@@ -487,6 +467,7 @@ Indi.manager=(function($) {
           switch (jsonmsg.type) {
             case 'setConnected':
               indiserver.setConnected(jsonmsg.connected);
+              if (jsonmsg.connected) this.ui_element.setconnected(indiserver);
               result = 'MANAGER('+jsonmsg.serverkey+'): setConnected=' + jsonmsg.connected;
               break;
             case 'newDevice':

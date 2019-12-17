@@ -11,11 +11,15 @@
       <!-- <script type='application/javascript' src='js/indi_simple_html.js'></script> -->
       <script type='application/javascript' src='js/indi.js'></script>
       <script type='application/javascript' src='js/indiui_simple_html.js'></script>
+      <link rel="stylesheet" href="/css/pyindi-collapsible.css">
       <script type='application/javascript'>
-	$(document).ready(startws('{scheme!s}','{host!s}',{port!s}));
+	$(document).ready(startws('{scheme!s}','{host!s}',{port!s}, '#indicontainer'));
       </script>
     </head>
     <body>
+
+      <div id="indicontainer">
+      </div>
 
       <div id="logs" class="logs">
 	<div id="logsheader" class="divheader">

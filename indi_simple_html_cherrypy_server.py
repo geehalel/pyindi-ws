@@ -389,7 +389,10 @@ if __name__ == '__main__':
     parser.add_argument('--host', default='127.0.0.1')
     parser.add_argument('-p', '--port', default=9000, type=int)
     parser.add_argument('--ssl', action='store_true')
-    parser.add_argument('-s', '--simple', action='store_true')
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('-s', '--simple', action='store_true')
+    group.add_argument('-c', '--collapsible', action='store_true')
+    group.add_argument('-b', '--bootstrap', action='store_true')
     args = parser.parse_args()
 
     cherrypy.config.update({'server.socket_host': args.host,
@@ -400,9 +403,11 @@ if __name__ == '__main__':
         cherrypy.config.update({'server.ssl_certificate': './server.crt',
                                 'server.ssl_private_key': './server.key'})
 
-    indexfile = 'static/index_bootstrap.html'
+    indexfile = 'static/index_collapsible.html'
     if args.simple:
         indexfile = 'static/index_simple_html.html'
+    if args.bootstrap:
+        indexfile = 'static/index_bootstrap.html'
 
     WebSocketPlugin(cherrypy.engine).subscribe()
     cherrypy.tools.websocket = WebSocketTool()

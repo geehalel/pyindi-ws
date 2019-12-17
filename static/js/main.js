@@ -1,4 +1,4 @@
-function startws(scheme, host, port) {
+function startws(scheme, host, port, container) {
   return function() {
 
     websocket = scheme+'://'+host+':'+port+'/ws';
@@ -10,9 +10,7 @@ function startws(scheme, host, port) {
 	console.log('WebSocket Not Supported');
 	return;
     }
-    indielt=$('#logs');
-    indimanager=new Indi.manager(ws, indielt);
-
+    indimanager=new Indi.manager(ws, container);
     window.onbeforeunload = function(e) {
 	$('#message').val($('#message').val() + 'Bye bye...\n');
 	ws.close(1000, 'Disconnecting from WebSocket server\n');
