@@ -2,7 +2,8 @@
     <head>
       <!--<script type='application/javascript' src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>-->
       <!--<script type='application/javascript' src='https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js'></script>-->
-      <script type='application/javascript' src='js/jquery-1.11.0.js'></script>
+      <!--<script type='application/javascript' src='js/jquery-1.11.0.js'></script>-->
+      <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
       <!--<script type='application/javascript' src='js/FileSaver.js'></script>-->
       <script type='application/javascript' src='js/indi-util.js'></script>
       <script type='application/javascript' src='js/main.js'></script>
@@ -13,7 +14,7 @@
       <script type='application/javascript' src='js/indiui_simple_html.js'></script>
       <link rel="stylesheet" href="/css/pyindi-collapsible.css">
       <script type='application/javascript'>
-	$(document).ready(startws('{scheme!s}','{host!s}',{port!s}, '#indicontainer'));
+	$(document).ready(startws('{scheme!s}','{host!s}',{port!s}, '#indicontainer', {collapsible!s}));
       </script>
     </head>
     <body>

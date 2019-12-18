@@ -205,36 +205,46 @@ IndiUI.ui_iblob = (function($) {
     this.inputformat=$('<input type="text" readonly="readonly" size="8">');
     this.inputblob=$('<input type="file">');
     this.inputenable=$('<input type="checkbox">');
+    //this.divelt=$('tbody'); // seems to be a bug with tbody (added by default)
     this.divelt=$('<tr/>', {
 	    html : '<td title="'+this.iblob.name+'">'+(this.iblob.label?this.iblob.label:this.iblob.name)+'</td>'
     });
+    var ttable=$('<table/>');
     var td=$('<td/>');
+    td.append(ttable);
+    this.divelt.append(td);
+    var tline=$('<tr/>');
+    ttable.append(tline);
+    td=$('<td/>');
     var label=$('<label>Len: </label>');
     label.append(this.inputbloblen);
     td.append(label);
-    this.divelt.append(td);
+    tline.append(td);
     td=$('<td/>');
     label=$('<label>Size: </label>');
     label.append(this.inputblobsize);
     td.append(label);
-    this.divelt.append(td);
+    tline.append(td);
     td=$('<td/>');
     label=$('<label>Format: </label>');
     label.append(this.inputformat);
     td.append(label);
-    this.divelt.append(td);
+    tline.append(td);
+    tline=$('<tr/>');
+    ttable.append(tline);
     td=$('<td/>');
     label=$('<label>Enable transfer: </label>');
     label.append(this.inputenable);
     td.append(label);
-    this.divelt.append(td);
+    tline.append(td);
     td=$('<td/>');
     this.buttonSave=$('<button disabled="disabled" style="margin-left:5px;">Save</button>');
     td.append(this.buttonSave);
-    this.divelt.append(td);
+    tline.append(td);
+    td=$('<td/>');
     this.buttonDisplay=$('<button disabled="disabled" style="margin-left:5px;">Display</button>');
     td.append(this.buttonDisplay);
-    this.divelt.append(td);
+    tline.append(td);
 
     this.inputenable.on('click', {context: this.iblob }, function(evt) {
       var blob=evt.data.context;
@@ -257,7 +267,7 @@ IndiUI.ui_iblob = (function($) {
     });
 
     // Display element
-    this.displayelt=$('<tr/>', {
+    /*this.displayelt=$('<tr/>', {
       css : { display: 'none' },
       html : '<td title="VISUALIZER">None</td>'
     });
@@ -267,6 +277,23 @@ IndiUI.ui_iblob = (function($) {
       html : this.iblob.name+' contents'
     });
     this.displayelt.append(this.displaycontentelt);
+    this.displaycontent=null;
+    */
+    this.displayelt=$('<tr/>', {
+      css : { display: 'none' },
+    });
+    td=$('<td colspan="2"/>');
+    ttable=$('<table/>');
+    this.displaycontrolelt=$('<tr title="VISUALIZER">None</tr>');
+    ttable.append(this.displaycontrolelt);
+    this.displaycontentelt=$('<tr/>', {
+      //attr : { colspan : 4 },
+      //css : { width: '100%' },
+      html : this.iblob.name+' contents'
+    });
+    ttable.append(this.displaycontentelt);
+    td.append(ttable);
+    this.displayelt.append(td);
     this.displaycontent=null;
   };
   ui_iblob.prototype = {
@@ -304,8 +331,8 @@ IndiUI.ui_iblob = (function($) {
             //this.displaycontent.refresh();
             this.displaycontentelt.empty();
             this.displaycontentelt.append(this.displaycontent.getdivelt());
-            this.displayelt.children('td:first').empty();
-            this.displayelt.children('td:first').append(this.displaycontent.controls());
+            this.displaycontrolelt.empty();
+            this.displaycontrolelt.append(this.displaycontent.controls());
           }
         }
         this.displayelt.show();
@@ -433,30 +460,73 @@ IndiUI.ui_property = (function($) {
 }(jQuery));
 
 IndiUI.ui_device = (function($) {
-  var ui_device = function(device) {
+  var ui_device = function(device, collapsible) {
     this.device = device;
-    this.divelt=$('<div/>', {
-      html : '<h4>'+this.device.name+'</h4>'
-    });
+    this.collapsible=collapsible;
+    this.divelt=null;
+    this.groupelt=null;
     this.grouplist = [ ];
-  }
+    if (this.collapsible) {
+      var buttonid=this.device.server.host+'_'+this.device.server.port+'_'+this.device.name;
+      var button=$('<button type="button" class="collapsible" id="'+buttonid+'">'+this.device.name+'</button>');
+      this.divelt=$('<div/>');
+      this.divelt.append(button);
+      this.groupelt=$('<div class="collapsiblecontent"></div>');
+      this.divelt.append(this.groupelt);
+      button.on('click', function() {
+        this.classList.toggle("active");
+        var content = this.nextElementSibling;
+        if (content.style.display === "block") {
+          content.style.display = "none";
+        } else {
+          content.style.display = "block";
+        }
+      });
+    } else {
+      this.divelt=$('<div/>', {
+        html : '<h4>'+this.device.name+'</h4>'
+      });
+      this.groupelt=this.divelt;
+    }
+  };
   ui_device.prototype = {
     constructor : ui_device,
     addgroup: function(groupname) {
-      var newgroupdiv = $('<div/>', {
-        html : '<h5>'+groupname+'</h5>'
-      });
-      this.divelt.append(newgroupdiv);
-      this.grouplist[groupname] = newgroupdiv;
+      var newgroupdiv = null;
+      var newgroupadd = null;
+      if (this.collapsible) {
+        var buttonid=this.device.server.host+'_'+this.device.server.port+'_'+this.device.name+'_'+groupname;
+        var button=$('<button type="button" class="collapsible" id="'+buttonid+'">'+groupname+'</button>');
+        newgroupdiv=$('<div/>');
+        newgroupdiv.append(button);
+        newgroupadd=$('<div class="collapsiblecontent"></div>');
+        newgroupdiv.append(newgroupadd);
+        button.on('click', function() {
+          this.classList.toggle("active");
+          var content = this.nextElementSibling;
+          if (content.style.display === "block") {
+            content.style.display = "none";
+          } else {
+            content.style.display = "block";
+          }
+        });
+      } else {
+        newgroupdiv = $('<div/>', {
+          html : '<h5>'+groupname+'</h5>'
+        });
+        newgroupadd=newgroupdiv;
+      }
+      this.groupelt.append(newgroupdiv);
+      this.grouplist[groupname] = {'root': newgroupdiv, 'add': newgroupadd};
     },
     addproperty: function(property, groupname) {
-      this.grouplist[groupname].append(property.ui_element.get_root());
+      this.grouplist[groupname].add.append(property.ui_element.get_root());
     },
     removeproperty: function(property) {
       property.get_root().remove();
     },
     removegroup: function(groupname) {
-      this.grouplist[groupname].remove();
+      this.grouplist[groupname].root.remove();
     },
     get_root : function () {
   	  return this.divelt;
@@ -466,9 +536,11 @@ IndiUI.ui_device = (function($) {
 }(jQuery)) ;
 
 IndiUI.ui_server = (function($) {
-  var ui_server = function(server) {
+  var ui_server = function(server, collapsible) {
     this.server=server;
+    this.collapsible=collapsible;
     this.divelt = null;
+    this.deviceelt=null;
     this.listelt=$('<li/>');
     this.anchorelt=$('<a/>', {
       html : this.server.host+':'+this.server.port,
@@ -497,11 +569,30 @@ IndiUI.ui_server = (function($) {
           evt.data.context.connect(false);
         });
         this.anchorelt.css('background-color', '');
-        this.divelt=$('<div/>', {
-          html : '<h3>Server '+this.server.host+':'+this.server.port+'</h3>'
-        });
-        this.divelt.attr('id', this.server.id);
-
+        if (this.collapsible) {
+          var buttonid=this.server.host+'_'+this.server.port;
+          var button=$('<button type="button" class="collapsible" id="'+buttonid+'">Server '+this.server.host+':'+this.server.port+'</button>');
+          this.divelt=$('<div/>');
+          this.divelt.attr('id', this.server.id);
+          this.divelt.append(button);
+          this.deviceelt=$('<div class="collapsiblecontent"></div>');
+          this.divelt.append(this.deviceelt);
+          button.on('click', function() {
+            this.classList.toggle("active");
+            var content = this.nextElementSibling;
+            if (content.style.display === "block") {
+              content.style.display = "none";
+            } else {
+              content.style.display = "block";
+            }
+          });
+        } else {
+          this.divelt=$('<div/>', {
+            html : '<h3>Server '+this.server.host+':'+this.server.port+'</h3>'
+          });
+          this.divelt.attr('id', this.server.id);
+          this.deviceelt=this.divelt;
+        }
         this.anchorelt.attr('href', '#'+this.server.id);
       } else {
         this.connectelt.html('Connect');
@@ -516,7 +607,7 @@ IndiUI.ui_server = (function($) {
 	    }
     },
     adddevice: function(device) {
-      this.divelt.append(device.ui_element.get_root());
+      this.deviceelt.append(device.ui_element.get_root());
     },
     get_root: function() {
       return this.divelt;
@@ -532,21 +623,25 @@ IndiUI.ui_manager=(function($) {
   var ui_manager = function(manager, container, collapsible=true) {
     this.manager=manager;
     this.container=container;
+    this.collapsible=collapsible;
     $.ajax({
       url: '/html/indi_simple_html.html',
       success: function(data) {
-        //$(this.container).append('<div id="indi">\n' + data+'</div>\n');
-        $(this.container).append('<button type="button" class="collapsible" id="indimanager">Indi Manager</button>');
-        $(this.container).append('<div id="indi" class=collapsiblecontent>\n' + data+'</div>\n');
-        $("#indimanager").on('click', function() {
-          this.classList.toggle("active");
-          var content = this.nextElementSibling;
-          if (content.style.display === "block") {
-            content.style.display = "none";
-          } else {
-            content.style.display = "block";
-          }
-        });
+        if (this.collapsible) {
+          $(this.container).append('<button type="button" class="collapsible" id="indimanager">Indi Manager</button>');
+          $(this.container).append('<div id="indi" class=collapsiblecontent>\n' + data+'</div>\n');
+          $("#indimanager").on('click', function() {
+            this.classList.toggle("active");
+            var content = this.nextElementSibling;
+            if (content.style.display === "block") {
+              content.style.display = "none";
+            } else {
+              content.style.display = "block";
+            }
+          });
+        } else {
+          $(this.container).append('<div id="indi">\n' + data+'</div>\n');
+        }
         $('#connect').on('click', {context: this.manager}, function(evt) {
           var server = $('#server').val();
           var port =  $('#port').val();

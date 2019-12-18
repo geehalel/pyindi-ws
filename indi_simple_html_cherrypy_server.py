@@ -365,16 +365,17 @@ class IndiWebSocketHandler(WebSocket):
         #self.send(TextMessage(reason))
 
 class Root(object):
-    def __init__(self, host, port, ssl=False, indexfile='static/index_simple_html.html'):
+    def __init__(self, host, port, ssl=False, indexfile='static/index_simple_html.html', collapsible=True):
         self.host = host
         self.port = port
         self.scheme = 'wss' if ssl else 'ws'
         self.indexfile = indexfile
+        self.collapsible = collapsible
 
     @cherrypy.expose
     def index(self):
         f=open(self.indexfile)
-        return f.read().format(host=self.host, port=self.port, scheme=self.scheme)
+        return f.read().format(host=self.host, port=self.port, scheme=self.scheme, collapsible= 'true' if self.collapsible else 'false')
 
     @cherrypy.expose
     def ws(self):
@@ -403,16 +404,17 @@ if __name__ == '__main__':
         cherrypy.config.update({'server.ssl_certificate': './server.crt',
                                 'server.ssl_private_key': './server.key'})
 
-    indexfile = 'static/index_collapsible.html'
+    collapsible = True
+    indexfile = 'static/index_simple_html.html'
     if args.simple:
-        indexfile = 'static/index_simple_html.html'
+        collapsible = False
     if args.bootstrap:
         indexfile = 'static/index_bootstrap.html'
 
     WebSocketPlugin(cherrypy.engine).subscribe()
     cherrypy.tools.websocket = WebSocketTool()
 
-    cherrypy.quickstart(Root(args.host, args.port, args.ssl, indexfile), '', config={
+    cherrypy.quickstart(Root(args.host, args.port, args.ssl, indexfile, collapsible), '', config={
         '/ws': {
             'tools.websocket.on': True,
             'tools.websocket.handler_cls': IndiWebSocketHandler

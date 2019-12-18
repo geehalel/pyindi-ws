@@ -357,8 +357,8 @@ Indi.device = (function($) {
     this.id=this.server.id+'_'+this.name;
     this.propertylist = [ ];
     this.grouplist = [ ];
-    this.ui_element = new IndiUI.ui_device(this);
-  }
+    this.ui_element = new IndiUI.ui_device(this, this.server.manager.collapsible);
+  };
   device.prototype = {
     constructor : device,
     newProperty : function (jsondata) {
@@ -398,7 +398,7 @@ Indi.server = (function($) {
     this.manager=manager;
     this.ws=this.manager.ws;
     this.devicelist = [ ];
-    this.ui_element = new IndiUI.ui_server(this);
+    this.ui_element = new IndiUI.ui_server(this, this.manager.collapsible);
   };
   server.prototype = {
     constructor : server,
@@ -431,12 +431,13 @@ Indi.server = (function($) {
 }(jQuery)) ;
 
 Indi.manager=(function($) {
-  var manager = function(ews, container) {
+  var manager = function(ews, container, collapsible) {
     this.serverlist = [ ];
     this.container= container;
     this.ws=ews;
     this.key = null;
-    this.ui_element = new IndiUI.ui_manager(this, container);
+    this.collapsible = collapsible;
+    this.ui_element = new IndiUI.ui_manager(this, container, this.collapsible);
   };
   manager.prototype = {
     constructor : manager,
