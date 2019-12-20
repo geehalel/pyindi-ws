@@ -523,7 +523,7 @@ IndiUI.ui_device = (function($) {
       this.grouplist[groupname].add.append(property.ui_element.get_root());
     },
     removeproperty: function(property) {
-      property.get_root().remove();
+      property.ui_element.get_root().remove();
     },
     removegroup: function(groupname) {
       this.grouplist[groupname].root.remove();
@@ -639,6 +639,10 @@ IndiUI.ui_manager=(function($) {
               content.style.display = "block";
             }
           });
+          if (collapsible) {
+            $("#indi").css("display", "block");
+            $("#indimanager").toggleClass("active");
+          }
         } else {
           $(this.container).append('<div id="indi">\n' + data+'</div>\n');
         }

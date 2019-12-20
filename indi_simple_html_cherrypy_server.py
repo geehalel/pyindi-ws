@@ -375,7 +375,7 @@ class Root(object):
     @cherrypy.expose
     def index(self):
         f=open(self.indexfile)
-        return f.read().format(host=self.host, port=self.port, scheme=self.scheme, collapsible= 'true' if self.collapsible else 'false')
+        return f.read().format(host=self.host, port=self.port, scheme=self.scheme, collapsibleui= 'true' if self.collapsible else 'false')
 
     @cherrypy.expose
     def ws(self):

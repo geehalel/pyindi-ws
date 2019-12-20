@@ -46,7 +46,7 @@ Indi.util =  {
 		for (var i = 1; i < this.nelem; i++) {
 		    if (this.data[i] < min)
 			min = this.data[i];
-		    else		 
+		    else
 			if (this.data[i] > max)
 			    max = this.data[i];
 		}
@@ -90,7 +90,7 @@ Indi.util =  {
 		for (var i = 0; i < hist_width; i++) {
 		    if (this.histArray[i] > this.maxFrequency) {
 			this.maxIntensity=i;
-			this.maxFrequency=this.histArray[i];	
+			this.maxFrequency=this.histArray[i];
 		    }
 		}
 		this.median=0;
@@ -105,10 +105,10 @@ Indi.util =  {
 	    }
 
 	};
-	
+
 	return histogram;
     }(jQuery)),
-  
+
     starfind: (function($) {
 	var MINIMUM_PIXEL_RANGE = 5,
 	    MINIMUM_STDVAR = 5,
@@ -139,7 +139,7 @@ Indi.util =  {
 
 		if (dis<=0) //collision
 		    return true;
-		
+
 		//no collision
 		return false;
 	    },
@@ -230,7 +230,7 @@ Indi.util =  {
 		    edges = new Array();
 		    initStdDev--;
 		}
-		
+
 		var cen_count=0;
 		var cen_x=0;
 		var cen_y=0;
@@ -241,7 +241,7 @@ Indi.util =  {
 		// Let's sort edges, starting with widest
 		edges.sort(function(s1, s2) { return s2.width - s1.width;});
 		for (var i=0; i < edges.length; i++) {
-		    if (edges[i].scanned) 
+		    if (edges[i].scanned)
 			continue;
 		    cen_x = edges[i].x;
 		    cen_y = edges[i].y;
@@ -279,7 +279,7 @@ Indi.util =  {
 		    if (cen_count >= cen_limit) {
 			// We detected a centroid, let's init it
 			var rCenter={};
-			
+
 			rCenter.x = avg_x/sum;
 			rCenter.y = avg_y/sum;
 			rCenter.width = cen_w; // seems there is an error here in source
@@ -295,19 +295,19 @@ Indi.util =  {
 			// Complete sum along the radius
 			for (var k=~~(rCenter.width/2); k >= -(~~(rCenter.width/2)) ; k--)
 			    FSum += this.data[cen_x-k+(cen_y*this.histogram.width)] - min;
-			
+
 			// Half flux
 			HF = FSum / 2.0;
 
 			// Total flux starting from center
 			TF = this.data[cen_y * this.histogram.width + cen_x] - min;
-			
+
 			var pixelCounter = 1;
 			// Integrate flux along radius axis until we reach half flux
 			for (var k=1; k < ~~(rCenter.width/2); k++) {
 			    TF += this.data[cen_y * this.histogram.width + cen_x + k] - min;
 			    TF += this.data[cen_y * this.histogram.width + cen_x - k] - min;
-			    
+
 			    if (TF >= HF) {
 				break;
 			    }
@@ -328,7 +328,7 @@ Indi.util =  {
 		// Get HFR for the brightest star only, instead of averaging all stars
 		// It is more consistent.
 		// TODO: Try to test this under using a real CCD.
-		
+
 		if (this.starCenters.length == 0)
 		    return -1;
 
@@ -376,7 +376,7 @@ Indi.util =  {
 		return this.starCenters.length;
 	    }
 	};
-	
+
 	return starfind;
     }(jQuery)),
 
@@ -398,7 +398,7 @@ Indi.util =  {
 		return 'simpletext';
 	    }
 	};
-	
+
 	return simpletextviewer;
     }(jQuery)),
 
@@ -460,9 +460,9 @@ Indi.util =  {
 	    this.centerxelt=$('<td></td>');
 	    this.centeryelt=$('<td></td>');
 	    this.controlsdiv.append('<tr><th>Center</th></tr>');
-	    this.controlsdiv.append('<tr>',this.centerxelt,'</tr>');	    
+	    this.controlsdiv.append('<tr>',this.centerxelt,'</tr>');
 	    this.controlsdiv.append('<tr>',this.centeryelt,'</tr>');
-	    
+
 	    this.zoomrange.on('change', {context: this}, function(evt) {
 		var viewer=evt.data.context;
 		var z = viewer.zoomrange.val();
@@ -503,7 +503,7 @@ Indi.util =  {
 	    });
 
 	};
-   
+
 	simpleimageviewer.prototype = {
 	    constructor: simpleimageviewer,
 	    getdivelt : function () {
@@ -536,7 +536,7 @@ Indi.util =  {
 		this.centerxelt.append((this.orig.imgx + (this.size.imgx/2)).toFixed(0));
 		this.centeryelt.empty();
 		this.centeryelt.append((this.orig.imgy+(this.size.imgy/2)).toFixed(0));
-		this.ctx.drawImage(this.image, this.orig.imgx, this.orig.imgy, this.size.imgx, this.size.imgy, 
+		this.ctx.drawImage(this.image, this.orig.imgx, this.orig.imgy, this.size.imgx, this.size.imgy,
 				   this.orig.x, this.orig.y, this.size.x, this.size.y
 				  );
 	    },
@@ -556,7 +556,7 @@ Indi.util =  {
 		else if (this.orig.imgy + dy + this.size.imgy > this.image.height)
 		    this.orig.imgy = this.image.height -  this.size.imgy;
 		else
-		    this.orig.imgy +=dy;		
+		    this.orig.imgy +=dy;
 		this.orig.x = Math.max(0, (canvasdim.width / 2) - (this.image.width * zoomvalue/ (2 * this.zoom.max)));
 		this.orig.y = Math.max(0, (canvasdim.height / 2) - (this.image.height * zoomvalue / (2 * this.zoom.max)));
 		this.size.imgx = this.image.width/zoomvalue;
@@ -585,7 +585,7 @@ Indi.util =  {
 		return this.controlsdiv;
 	    }
 	};
-	
+
 	return simpleimageviewer;
     }(jQuery)),
 
@@ -612,7 +612,7 @@ Indi.util =  {
 	    this.blobblob=null;
 	    this.hdus=new Array();
 	    this.divelt=$('<div></div>',{
-		css: {width: (viewDims.width+4)+'px', height: (viewDims.height+(2 * 28))+'px', 
+		css: {width: (viewDims.width+4)+'px', height: (viewDims.height+(2 * 28))+'px',
 		      'overflow-x': 'auto', 'overflow-y': 'auto'}
 	    });
 	    // Controls
@@ -620,16 +620,18 @@ Indi.util =  {
 		//attr: {width: '400', height: '300'},
 		css: {border:  '1px solid', 'font-size':'smaller'}
 	    });
-	    this.hduslist=$('<tr></tr>', {
-		html: '<th colspan="4">HDUs</th>'
+      this.controlsroot=$('<tr></tr>');
+      this.controlsdiv.append(this.controlsroot);
+	    this.hduslist=$('<th></th>', {
+		html: 'HDUs'
 	    });
 	    this.selected=null;
 	    this.current=null;
-	    this.hduselected=$('<tr></tr>', {
-		html: '<th colspan="4">None</th>'
-	    });	    
+	    this.hduselected=$('<th></th>', {
+		html: 'None'
+	    });
 	    this.selectview=$('<select></select>');
-	    for (var v in viewOptions) { 
+	    for (var v in viewOptions) {
 		var opt=viewOptions[v];
 		var optelt=$('<option value="'+v+'">'+opt.label+'</option>');
 		this.selectview.append(optelt);
@@ -640,11 +642,11 @@ Indi.util =  {
 		viewer.setview(this[this.selectedIndex].value);
 	    	//alert('view changed');
 	    });
-	    this.controlsdiv.append(this.hduslist);
-	    this.controlsdiv.append(this.hduselected);
+	    this.controlsroot.append(this.hduslist);
+	    this.controlsroot.append(this.hduselected);
 	    tmpelt=$('<td colspan="4"></td>');
 	    tmpelt.append(this.selectview);
-	    this.controlsdiv.append($('<tr></tr>').append(tmpelt));
+	    this.controlsroot.append(tmpelt);
 	    this.currentview=null;
 	    this.defaultdataelt=$('<div/>',{
 		css : {border: '1px solid'},
@@ -658,24 +660,26 @@ Indi.util =  {
 		return this.divelt;
 	    },
 	    buildhduelt: function (index, hdu) {
-		var elt = $('<tr></tr>');
-		var sel=$('<td title="Select"><button>'+index+'</button></td>');
+		var elt = $('<td></td>');
+		var sel=$('<button>'+index+'</button>');
 		var hdr=hdu.header;
 		elt.append(sel);
 		sel.on('click', {context: this}, function(evt) {
 		    evt.data.context.setcurrenthdu(index);
 		});
+    elt.append('<span> Type: </span>');
 		if (hdr.isPrimary())
-		    elt.append('<td title="Primary">P</td>');
+		    elt.append('<span title="Primary">Primary </span>');
 		else if (hdr.isExtension())
-		    elt.append('<td title="Extension">E</td>');
+		    elt.append('<span title="Extension">Extension </span>');
 		else
-		    elt.append('<td title="Unknown">?</td>');
+		    elt.append('<span title="Unknown">Unknown </span>');
 		if (hdr.hasDataUnit())
- 		    elt.append('<td title="Has Data">x</td>');	
+ 		    elt.append('<span title="Has Data">Has data </span>');
 		else
-		    elt.append('<td title="No Data">-</td>');
-		elt.append('<td title="Data Type">'+hdr.getDataType()+'</td>');
+		    elt.append('<span title="No Data">No data </span>');
+    elt.append('<span>Data type: </span>');
+		elt.append('<span title="Data Type">'+hdr.getDataType()+' </span>');
 		return elt;
 	    },
 	    buildfitsheaderelt: function (index, hdu) {
@@ -693,9 +697,9 @@ Indi.util =  {
 			    elt.append('<tr><td rowspan="'+c.length+'"></td><td rowspan="'+c.length+'">'+card+
 				       '</td><td colspan="2">'+c[0]+'</td>');
 			    for (var l=1; l < c.length; l++) {
-				elt.append('<tr><td colspan="2">'+c[l]+'</td>');		
+				elt.append('<tr><td colspan="2">'+c[l]+'</td>');
 			    }
-			} 
+			}
 		    } else {
 			elt.append('<tr><td>'+c.index+'</td><td>'+card+'</td><td>'+c.value+'</td><td>'+c.comment+'</td></tr>');
 		    }
@@ -715,25 +719,25 @@ Indi.util =  {
 		 //var dataunit = opts.dataunit;
 		 var width = opts.width;
 		 var height = opts.height;
-		 
+
 
 		 // Get the minimum and maximum pixels
 		 var extent = opts.extent || [];
-		 
+
 		 // Get the DOM element
 		 var el =  opts.el;
 		 var factor= Math.min(viewDims.width / width, viewDims.height / height);
-		 
+
 		 // Initialize a WebFITS context with a viewer of size width
 		 var raw;
-		 if (factor < 1.0) 
+		 if (factor < 1.0)
 		   raw = new rawimage(el, {width: factor * width, height: factor*height});
-	         else 
+	         else
 		   raw = new rawimage(el, {width: width, height: height});
 		 //var raw = new rawimage(el, 400);
 		 if (!raw)
 		     alert('Can not create rawimage(webgl absent?)');
-		 
+
 		 this.frame = arr;
 		 this.histogram = new Indi.util.histogram(arr, width, height, extent);
 		 if (factor < 1.0)
@@ -758,7 +762,7 @@ Indi.util =  {
 			 }
 		     }
 		 }, {context: this});
-		 
+
 		 //raw.zoom = (factor/2) / width;
 		 //raw.zoom = 2.0 / width;
 		 if (factor < 1.0) {
@@ -790,7 +794,7 @@ Indi.util =  {
 		     if ((stretch == 'color') && (viewer.frames.length >=3)) {
 			 evt.data.raw.drawColor(viewer.name+'_FRAME0', viewer.name+'_FRAME1', viewer.name+'_FRAME2');
 		     } else {
-			 //evt.data.raw.setImage(viewer.name); 
+			 //evt.data.raw.setImage(viewer.name);
 			 evt.data.raw.draw();
 		     }
 		 });
@@ -804,17 +808,17 @@ Indi.util =  {
 		 colormapselect.on('change', {context: this, raw: raw}, function(evt) {
 		     var cmap = this[this.selectedIndex].value;
 		     evt.data.raw.setColorMap(cmap);
-		 });		 
-		 // Color Images 
+		 });
+		 // Color Images
 		 raw.setScales(1.0/255, 1.0/255, 1.0/255);
 		 raw.setCalibrations(1.0, 1.0, 1.0);
 		 raw.setAlpha(1.0);
 		 raw.setQ(1.0);
-		 
+
 		 flipXcheckbox.on('change', {context: this, raw: raw}, function(evt) {
 		     evt.data.raw.flipX = !(evt.data.raw.flipX);
 		     evt.data.raw.draw();
-		 });		 
+		 });
 		 flipYcheckbox.on('change', {context: this, raw: raw}, function(evt) {
 		     evt.data.raw.flipY = !(evt.data.raw.flipY);
 		     evt.data.raw.draw();
@@ -829,7 +833,7 @@ Indi.util =  {
 		 //raw.setCursor(); does not work
 	     },
 	    loadFrames: function (arr, opts) {
-		var coeffRGB = [0.2126 , 0.7152, 0.0722]; 
+		var coeffRGB = [0.2126 , 0.7152, 0.0722];
 		var _this=opts.context;
 		var coeff = coeffRGB[_this.framesloaded];
 		_this.frames[_this.framesloaded] = arr;
@@ -841,7 +845,7 @@ Indi.util =  {
 		if (_this.framesloaded == opts.nframes)
 		    opts.callback.call(_this, _this.composite, opts.callbackopts);
 		    //_this.invoke(opts.callback,  _this.composite, opts.callbackopts);
-		
+
 	    },
 	    buildfitsdataelt: function (index, hdu) {
 
@@ -856,7 +860,7 @@ Indi.util =  {
 		});
 		var controlelt = $('<div></div>',{
 		    //css : {border: '1px solid'}
-		});		
+		});
 		var visuelt = $('<div></div>',{
 		    //css : {border: '1px solid'}
 		});
@@ -868,7 +872,7 @@ Indi.util =  {
 				     {css : {border: '1px solid', 'margin-left': '3px', 'font-size': 'smaller'}});
 		var crosshaircheckbox = $('<label>Crosshair:<input type="checkbox" title="Show crosshair"></input></label>',
 				     {css : {border: '1px solid', 'margin-left': '3px', 'font-size': 'smaller'}});
-		
+
 		var statselt = $('<div></div>',{
 		    //css : {display: 'inline-block'}
 		});
@@ -876,14 +880,14 @@ Indi.util =  {
 		this.xoffsetelt = $('<span></span>', {css : {'margin-left': '5px'}});
 		this.yoffsetelt = $('<span></span>', {css : {'margin-left': '5px'}});
 		this.valueelt = $('<span></span>', {css : {'margin-left': '5px'}});
-		
-		
+
+
 
 		statselt.append(this.hfrelt, this.xoffsetelt, this.yoffsetelt, this.valueelt);
 		controlelt.append(stretchselect, colormapselect, flipXcheckbox, flipYcheckbox, crosshaircheckbox);
 		elt.append(controlelt, visuelt, statselt);
 		return {
-		    elt: elt, 
+		    elt: elt,
 		    visuelt: visuelt,
 		    ctrlelts:  {
 			stretchselect: stretchselect,
@@ -896,13 +900,13 @@ Indi.util =  {
 	    },
 	    buildfitsimageelt: function (index, hdu) {
 		var elts = this.buildimageelt();
-		var elt=elts.elt; 
+		var elt=elts.elt;
 		var visuelt=elts.visuelt;
 		var dataunit=hdu.data;
 		// Set options to pass to the next callback
 		var opts = {
 		    context: this,
-		    width: dataunit.width, 
+		    width: dataunit.width,
 		    height:dataunit.height,
 		    el: visuelt[0],
 		    ctrlelts: elts.ctrlelts
@@ -913,8 +917,8 @@ Indi.util =  {
 			this.composite[i] = 0;
 		    this.frames = new Array(dataunit.depth);
 		    this.framesloaded = 0;
-		    dataunit.getFrames(0, dataunit.depth, this.loadFrames, 
-				       { context: this, width: dataunit.width, height:dataunit.height, nframes: dataunit.depth, 
+		    dataunit.getFrames(0, dataunit.depth, this.loadFrames,
+				       { context: this, width: dataunit.width, height:dataunit.height, nframes: dataunit.depth,
 					 callback: this.createVisualization,  callbackopts: opts}
 				      );
 		} else {
@@ -927,17 +931,17 @@ Indi.util =  {
 	    },
 	    buildjpegimageelt: function (image) {
 		var elts = this.buildimageelt();
-		var elt=elts.elt; 
+		var elt=elts.elt;
 		var visuelt=elts.visuelt;
-		var coeffRGB = [0.2126 , 0.7152, 0.0722]; 
+		var coeffRGB = [0.2126 , 0.7152, 0.0722];
 		var frameR=new Array(image.width*image.height);
 		var frameG=new Array(image.width*image.height);
 		var frameB=new Array(image.width*image.height);
 		this.frames=[frameR, frameG, frameB];
-		this.composite = new Array(image.width*image.height);		    
-		var coeffR=coeffRGB[0]; 
-		var coeffG=coeffRGB[1]; 
-		var coeffB=coeffRGB[2]; 
+		this.composite = new Array(image.width*image.height);
+		var coeffR=coeffRGB[0];
+		var coeffG=coeffRGB[1];
+		var coeffB=coeffRGB[2];
 		var canvas = document.createElement('canvas');
 		var context = canvas.getContext('2d');
 		canvas.width=image.width;
@@ -961,7 +965,7 @@ Indi.util =  {
 		}
 		var opts = {
 		    context: this,
-		    width: image.width, 
+		    width: image.width,
 		    height: image.height,
 		    el: visuelt[0],
 		    ctrlelts: elts.ctrlelts
@@ -1003,7 +1007,7 @@ Indi.util =  {
 			if (hdu.fitsdataelt) hdu.fitsdataelt.remove();
 			hdu.elt.remove();
 			hdu=this.hdus.pop();
-		    } 
+		    }
 		}
 		if (this.format == 'fits') {
 		    if (!this.fits) alert ('glviewer: can not load fits');
@@ -1015,14 +1019,14 @@ Indi.util =  {
 			//this.hduslist.after(e);
 			this.hduselected.before(e);
 			this.hdus.push({elt: e, fitsheaderelt: he, fitsdataelt: ie});
-			
+
 		    }
 		    this.setcurrenthdu(0);
 		    //this.fits.hdus.length
 		}
 		if ((this.format == 'jpg') || (this.format == 'jpeg') || (this.format == 'gif') || (this.format == 'tiff') || (this.format == 'png')) {
 		    var e = this.buildjpegimageelt(this.jpeg);
-		    // TO BE REWRITTEN 
+		    // TO BE REWRITTEN
 		    this.hdus.push({elt: e, fitsheaderelt: e, fitsdataelt: e});
 		    this.setcurrenthdu(0);
 		}
@@ -1032,18 +1036,18 @@ Indi.util =  {
 		this.selected=index;
 		this.current=this.hdus[this.selected];
 		this.current.elt.css('background-color', '#E0E0E0');
-		this.divelt.empty();		
+		this.divelt.empty();
 		this.hduselected.empty();
-		this.hduselected.append('<th colspan="4">HDU'+this.selected+'</th>');
+		this.hduselected.append('HDU'+this.selected);
 		this.resetselectview();
 		if (this.current.fitsheaderelt) {
-		    this.divelt.append(this.current.fitsheaderelt);		
+		    this.divelt.append(this.current.fitsheaderelt);
 		    this.enableselectview('header');
 		    this.setselectedview('header');
 		    this.setview('header');
 		}
 		if (this.current.fitsdataelt) {
-		    this.divelt.append(this.current.fitsdataelt);		
+		    this.divelt.append(this.current.fitsdataelt);
 		    this.enableselectview('data');
 		    this.setselectedview('data');
 		    this.setview('data');
@@ -1065,11 +1069,11 @@ Indi.util =  {
 		if (this.currentview) this.currentview.hide();
 		if (this.current) {
 		    switch (value) {
-		    case 'header': 
-			if (this.current.fitsheaderelt) 
+		    case 'header':
+			if (this.current.fitsheaderelt)
 			    this.currentview = this.current.fitsheaderelt;
 			break;
-		    case 'data': 
+		    case 'data':
 			if (this.current.fitsdataelt)
 			    this.currentview = this.current.fitsdataelt;
 			break;
@@ -1081,7 +1085,7 @@ Indi.util =  {
 		return this.controlsdiv;
 	    }
 	};
-	
+
 	return glviewer;
     }(jQuery)),
 

@@ -1,59 +1,70 @@
 function startws(scheme, host, port, container, collapsible) {
   return function() {
-
+    $("#indilogs").on('click', function() {
+      this.classList.toggle("active");
+      var content = this.nextElementSibling;
+      if (content.style.display === "block") {
+        content.style.display = "none";
+      } else {
+        content.style.display = "block";
+      }
+    });
+    $("#logs").css("display", "block");
+    $("#indilogs").toggleClass("active");
     websocket = scheme+'://'+host+':'+port+'/ws';
     if (window.WebSocket) {
 	    ws = new WebSocket(websocket);
     } else if (window.MozWebSocket) {
-	ws = MozWebSocket(websocket);
+      ws = MozWebSocket(websocket);
     } else {
-	console.log('WebSocket Not Supported');
-	return;
+      console.log('WebSocket Not Supported');
+      $('#message').val($('#message').val() +'WebSocket Not Supported\n');
+      alert('WebSocket Not Supported');
+      return;
     }
+
     indimanager=new Indi.manager(ws, container, collapsible);
+
     window.onbeforeunload = function(e) {
-	$('#message').val($('#message').val() + 'Bye bye...\n');
-	ws.close(1000, 'Disconnecting from WebSocket server\n');
-	if (!e) e = window.event;
-	e.stopPropagation();
-	e.preventDefault();
+      $('#message').val($('#message').val() + 'Bye bye...\n');
+      ws.close(1000, 'Disconnecting from WebSocket server\n');
+      if (!e) e = window.event;
+      e.stopPropagation();
+      e.preventDefault();
     };
 
-  ws.onmessage = function (evt) {
-	var result=null;
-  //console.log(evt);
-	try { // should avoid to try to parse indi-ws or other simple messages
-    var obj=$.parseJSON(evt.data);
-    if (obj.type) {
-      result = indimanager.processmessage(obj);
-    } else {
+    ws.onmessage = function (evt) {
+      var result=null;
+      //console.log(evt);
+      try { // should avoid to try to parse indi-ws or other simple messages
+        var obj=$.parseJSON(evt.data);
+        if (obj.type) {
+          result = indimanager.processmessage(obj);
+        } else {
 		      result = 'Unknown json format: '+ JSON.stringify(obj);
-	  }
-	} catch (e) {
-	    result =  "MESSAGE: " + evt.data ;
-	}
-	if (result && ! $('#logsuspend').is(':checked'))
-	    $('#message').val($('#message').val() + result + '\n');
+        }
+      } catch (e) {
+        result =  "MESSAGE: " + evt.data ;
+      }
+      if (result && ! $('#logsuspend').is(':checked'))
+        $('#message').val($('#message').val() + result + '\n');
     };
 
     ws.onopen = function() {
-	$('#message').val("WebSocket opened - Fetching key\n");
-	ws.sendmsg('getkey', null);
+      $('#message').val("WebSocket opened - Fetching key\n");
+      ws.sendmsg('getkey', null);
     };
 
     ws.onclose = function(evt) {
-	$('#message').val($('#message').val() + 'Connection closed by server: ' + evt.code + ' \"' + evt.reason + '\"\n');
+      $('#message').val($('#message').val() + 'Connection closed by server: ' + evt.code + ' \"' + evt.reason + '\"\n');
     };
 
     ws.sendmsg = function (type, data) {
-	var msg = { };
-	msg.type=type;
-	msg.data=data;
-	//jsonmsg=JSON.stringify(msg);
-	ws.send(JSON.stringify(msg));
+      var msg = { };
+      msg.type=type;
+      msg.data=data;
+      //jsonmsg=JSON.stringify(msg);
+      ws.send(JSON.stringify(msg));
     }
-
-
-
   };
 }

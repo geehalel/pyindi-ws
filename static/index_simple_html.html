@@ -1,36 +1,38 @@
 <html>
-    <head>
-      <!--<script type='application/javascript' src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>-->
-      <!--<script type='application/javascript' src='https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js'></script>-->
-      <!--<script type='application/javascript' src='js/jquery-1.11.0.js'></script>-->
-      <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
-      <!--<script type='application/javascript' src='js/FileSaver.js'></script>-->
-      <script type='application/javascript' src='js/indi-util.js'></script>
-      <script type='application/javascript' src='js/main.js'></script>
-      <script type='application/javascript' src='js/astro.js/fits.js'></script>
-      <script type='application/javascript' src='js/astro.js/rawimage.js'></script>
-      <!-- <script type='application/javascript' src='js/indi_simple_html.js'></script> -->
-      <script type='application/javascript' src='js/indi.js'></script>
-      <script type='application/javascript' src='js/indiui_simple_html.js'></script>
-      <link rel="stylesheet" href="/css/pyindi-collapsible.css">
-      <script type='application/javascript'>
-	$(document).ready(startws('{scheme!s}','{host!s}',{port!s}, '#indicontainer', {collapsible!s}));
-      </script>
-    </head>
-    <body>
+  <head>
+    <!--<script type='application/javascript' src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>-->
+    <!--<script type='application/javascript' src='https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js'></script>-->
+    <!--<script type='application/javascript' src='js/jquery-1.11.0.js'></script>-->
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script type='application/javascript' src='js/FileSaver.js'></script>
+    <script type='application/javascript' src='js/indi-util.js'></script>
+    <script type='application/javascript' src='js/main.js'></script>
+    <script type='application/javascript' src='js/astro.js/fits.js'></script>
+    <script type='application/javascript' src='js/astro.js/rawimage.js'></script>
+    <!-- <script type='application/javascript' src='js/indi_simple_html.js'></script> -->
+    <script type='application/javascript' src='js/indi.js'></script>
+    <script type='application/javascript' src='js/indiui_simple_html.js'></script>
+    <link rel="stylesheet" href="/css/pyindi-collapsible.css">
+    <script type='application/javascript'>
+      $(document).ready(startws('{scheme!s}','{host!s}',{port!s}, '#indicontainer', {collapsibleui!s}));
+    </script>
+  </head>
+  <body>
 
-      <div id="indicontainer">
-      </div>
+    <div id="indicontainer">
+    </div>
 
-      <div id="logs" class="logs">
-	<div id="logsheader" class="divheader">
-	  Logs <input type="checkbox" id="logsuspend"/><label for="logsuspend">Suspend</label>
-	</div>
-	<div id="logscontent" class="divcontent">
-	  <textarea id='message' rows='10' style="width:100%"></textarea>
-	</div>
-	<div id="logsfilter" class="divfooter">
-	</div>
+    <button type="button" class="collapsible" id="indilogs">Logs</button>
+    <div id="logs" class="logs collapsiblecontent">
+      <div id="logsheader" class="divheader">
+	       Logs <input type="checkbox" id="logsuspend"/><label for="logsuspend">Suspend</label>
       </div>
-    </body>
+      <div id="logscontent" class="divcontent">
+        <textarea id='message' rows='10' style="width:100%"></textarea>
+      </div>
+        <div id="logsfilter" class="divfooter">
+      </div>
+    </div>
+
+  </body>
 </html>
